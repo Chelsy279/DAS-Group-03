@@ -1,0 +1,40 @@
+---
+title: "Analysis of the FIES recorded in the Philippines"
+author: "Group_03"
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+  pdf: default
+editor_options: 
+  chunk_output_type: console
+execute:
+  echo: false
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(gt)
+library(patchwork)
+library(gridExtra)
+library(moderndive)
+```
+
+# Introduction
+
+# Data Cleaning
+
+```{r}
+Data_FIES <- read.csv("dataset03.csv")
+```
+
+# Exploratory Data Analysis
+
+# Formal Data Analysis
+
+# Conclusion
