@@ -1,0 +1,397 @@
+---
+title: "DAS-Group-Project2"
+format: html
+editor: visual
+---
+
+```{r}
+install.packages("naniar")
+install.packages("ggcorrplot")
+library(naniar)
+library(ggcorrplot)
+
+```
+
+```{r}
+# 设置工作目录（如果需要）
+setwd("C:/Users/kakiya/Desktop")
+
+# 读取数据
+data <- read.csv("dataset03.csv", header = TRUE, stringsAsFactors = FALSE)
+
+# 查看数据结构
+str(data)
+
+# 显示前几行数据
+head(data)
+```
+
+```{r}
+# 变量转换
+data$Total.Household.Income <- as.numeric(data$Total.Household.Income)  # 年度家庭收入
+data$Region <- as.factor(data$Region)  # 家庭所在地区
+data$Total.Food.Expenditure <- as.numeric(data$Total.Food.Expenditure)  # 年度家庭食品支出
+data$Household.Head.Sex <- as.factor(data$Household.Head.Sex)  # 户主性别
+data$Household.Head.Age <- as.numeric(data$Household.Head.Age)  # 户主年龄
+data$Type.of.Household <- as.factor(data$Type.of.Household)  # 家庭类型
+data$Total.Number.of.Family.members <- as.numeric(data$Total.Number.of.Family.members)  # 家庭成员总数
+data$House.Floor.Area <- as.numeric(data$House.Floor.Area)  # 房屋面积
+data$House.Age <- as.numeric(data$House.Age)  # 房屋年龄
+data$Number.of.bedrooms <- as.numeric(data$Number.of.bedrooms)  # 卧室数量
+data$Electricity <- as.factor(data$Electricity)  # 电力供应（因子）
+
+# 检查转换后的数据类型
+str(data)
+```
+
+```{r}
+# 查看数据基本信息
+str(data)
+
+# 检查缺失值
+colSums(is.na(data))
+
+# 统计描述数据
+summary(data)
+
+# 可视化缺失值（可选）
+library(ggplot2)
+library(naniar)
+gg_miss_var(data)
+
+```
+
+以下全部考虑整体
+
+```{r}
+# 计算相关矩阵
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# 绘制标准相关性矩阵（对角线为1）
+ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white","orange"), outline.color = "black", legend.title = "相关性")+
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),  # 加大X轴字体，旋转45°
+    axis.text.y = element_text(size = 9),  # 加大Y轴字体
+    legend.text = element_text(size = 14),  # 图例字体变大
+    legend.title = element_text(size = 16)  # 图例标题变大
+  )
+
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data, aes(x = Total.Household.Income, y = Total.Number.of.Family.members)) +
+  geom_point(alpha = 0.5) +  # 散点图，透明度 0.5 避免重叠
+  geom_smooth(method = "lm", color = "red") +  # 添加回归线
+  labs(title = "Total.Number.of.Family.members vs Total.Household.Income",
+       x = "Total.Household.Income",
+       y = "Total.Number.of.Family.members")
+
+
+```
+
+```{r}
+ggplot(data, aes(x = Total.Food.Expenditure, y = Total.Number.of.Family.members)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Total.Number.of.Family.members vs Total.Food.Expenditure",
+       x = "Total.Food.Expenditure",
+       y = "Total.Number.of.Family.members")
+
+```
+
+```{r}
+ggplot(data, aes(x = Household.Head.Age, y = Total.Number.of.Family.members)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Total.Number.of.Family.members vs Household.Head.Age",
+       x = "Household.Head.Age",
+       y = "Total.Number.of.Family.members")
+
+```
+
+```{r}
+ggplot(data, aes(x = House.Floor.Area, y = Total.Number.of.Family.members)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Total.Number.of.Family.members vs House.Floor.Area",
+       x = "House.Floor.Area",
+       y = "Total.Number.of.Family.members")
+
+```
+
+```{r}
+ggplot(data, aes(x = House.Age, y = Total.Number.of.Family.members)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Total.Number.of.Family.members vs House.Age",
+       x = "House.Age",
+       y = "Total.Number.of.Family.members")
+
+```
+
+```{r}
+ggplot(data, aes(x = Number.of.bedrooms, y = Total.Number.of.Family.members)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Total.Number.of.Family.members vs Number.of.bedrooms",
+       x = "Number.of.bedrooms",
+       y = "Total.Number.of.Family.members")
+
+```
+
+```{r}
+ggplot(data, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members)) +
+  geom_boxplot(fill = "lightgreen", outlier.colour = "red", outlier.shape = 16) +
+  labs(title = "家庭人口数量 vs 户主性别", x = "户主性别", y = "家庭人口数量") +
+  theme(axis.text.x = element_text(size = 12))
+
+```
+
+```{r}
+ggplot(data, aes(x = Type.of.Household, y = Total.Number.of.Family.members)) +
+  geom_boxplot(fill = "lightpink", outlier.colour = "red", outlier.shape = 16) +
+  labs(title = "家庭人口数量 vs 家庭类型", x = "家庭类型", y = "家庭人口数量") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
+
+```
+
+```{r}
+ggplot(data, aes(x = Electricity, y = Total.Number.of.Family.members)) +
+  geom_boxplot(fill = "lightyellow", outlier.colour = "red", outlier.shape = 16) +
+  labs(title = "家庭人口数量 vs 是否有电", x = "是否有电", y = "家庭人口数量") +
+  theme(axis.text.x = element_text(size = 12))
+
+```
+
+以下考虑分类变量
+
+1.以性别分类
+
+```{r}
+# 确保 Household.Head.Sex 是因子变量
+data$Household.Head.Sex <- as.factor(data$Household.Head.Sex)
+
+# 按性别分类数据
+data_male <- subset(data, Household.Head.Sex == "Male")   # 仅包含男性户主的数据
+data_female <- subset(data, Household.Head.Sex == "Female") # 仅包含女性户主的数据
+
+# 检查数据大小
+cat("男性户主数据集大小:", nrow(data_male), "行\n")
+cat("女性户主数据集大小:", nrow(data_female), "行\n")
+
+```
+
+```{r}
+library(ggcorrplot)
+
+# 选择数值变量
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# 确保所有数值变量为 numeric 类型
+for (var in numeric_vars) {
+  data[, var] <- as.numeric(data[, var])
+}
+
+# 按性别分类数据
+data_male <- subset(data, Household.Head.Sex == "Male")
+data_female <- subset(data, Household.Head.Sex == "Female")
+
+# 计算男性户主的相关矩阵
+cor_matrix_male <- cor(data_male[, numeric_vars], use = "complete.obs")
+
+# 计算女性户主的相关矩阵
+cor_matrix_female <- cor(data_female[, numeric_vars], use = "complete.obs")
+
+# 绘制男性户主相关性矩阵
+ggcorrplot(cor_matrix_male, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white", "orange"), outline.color = "black", 
+           legend.title = "相关性") +
+  labs(title = "男性户主的相关性矩阵")+
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),  # 加大X轴字体，旋转45°
+    axis.text.y = element_text(size = 9),  # 加大Y轴字体
+    legend.text = element_text(size = 14),  # 图例字体变大
+    legend.title = element_text(size = 16)  # 图例标题变大
+  )
+
+# 绘制女性户主相关性矩阵
+ggcorrplot(cor_matrix_female, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white", "orange"), outline.color = "black", 
+           legend.title = "相关性") +
+  labs(title = "女性户主的相关性矩阵")+
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),  # 加大X轴字体，旋转45°
+    axis.text.y = element_text(size = 9),  # 加大Y轴字体
+    legend.text = element_text(size = 14),  # 图例字体变大
+    legend.title = element_text(size = 16)  # 图例标题变大
+  )
+
+```
+
+```{r}
+# 设定数值变量
+numeric_vars <- c("Total.Household.Income", "Total.Food.Expenditure", 
+                  "Household.Head.Age", "House.Floor.Area", 
+                  "House.Age", "Number.of.bedrooms")
+
+# 确保所有变量为数值型
+for (var in numeric_vars) {
+  data[, var] <- as.numeric(data[, var])
+}
+
+# 遍历所有数值变量，在同一张图里绘制男性和女性的散点图+回归线
+for (x_var in numeric_vars) {
+  p <- ggplot(data, aes_string(x = x_var, y = "Total.Number.of.Family.members", color = "Household.Head.Sex")) +
+    geom_jitter(alpha = 0.6, size = 1.5, width = 0.2, height = 0) +  # 添加抖动，点更小，防止重叠
+    geom_smooth(method = "lm", se = FALSE, aes(group = Household.Head.Sex), size = 0.8) +  # 线变细
+    labs(title = paste(x_var, "vs Total.Number.of.Family.members (按性别)"), 
+         x = x_var, y = "家庭人口数") +
+    scale_color_manual(values = c("Male" = "blue", "Female" = "red")) +  # 颜色
+    theme_minimal()
+  
+  print(p)  # 显示图形
+}
+
+
+```
+
+2.以家庭种类分类
+
+```{r}
+# 确保 Type.of.Household 是因子变量
+data$Type.of.Household <- as.factor(data$Type.of.Household)
+
+# 获取所有家庭类型
+household_types <- levels(data$Type.of.Household)
+
+# 创建一个列表来存储不同类型的子数据集
+household_data_list <- list()
+
+# 遍历每种家庭类型并创建子数据集
+for (type in household_types) {
+  household_data_list[[type]] <- subset(data, Type.of.Household == type)
+}
+
+# 打印每个子数据集的行数
+for (type in household_types) {
+  cat("家庭类型:", type, "数据集大小:", nrow(household_data_list[[type]]), "行\n")
+}
+
+```
+
+```{r}
+
+# 确保 Type.of.Household 是因子变量
+data$Type.of.Household <- as.factor(data$Type.of.Household)
+
+# 获取所有家庭类型
+household_types <- levels(data$Type.of.Household)
+
+# 设定数值变量
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# 确保所有变量为数值型
+for (var in numeric_vars) {
+  data[, var] <- as.numeric(data[, var])
+}
+
+# 遍历每种家庭类型，计算相关性矩阵并绘制热力图
+for (type in household_types) {
+  # 提取当前家庭类型的数据
+  subset_data <- subset(data, Type.of.Household == type)
+  
+  # 计算相关矩阵（去除缺失值）
+  cor_matrix <- cor(subset_data[, numeric_vars], use = "complete.obs")
+  
+  # 绘制相关性热力图
+  print(ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+                   colors = c("blue", "white", "orange"), outline.color = "black", 
+                   legend.title = "相关性") + 
+          labs(title = paste("家庭类型:", type, "的相关性矩阵")))+
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),  # 加大X轴字体，旋转45°
+    axis.text.y = element_text(size = 9),  # 加大Y轴字体
+    legend.text = element_text(size = 14),  # 图例字体变大
+    legend.title = element_text(size = 16)  # 图例标题变大
+  )
+}
+```
+
+```{r}
+# 设定数值变量
+numeric_vars <- c("Total.Household.Income", "Total.Food.Expenditure", 
+                  "Household.Head.Age", "House.Floor.Area", 
+                  "House.Age", "Number.of.bedrooms")
+
+# 确保所有变量为数值型
+for (var in numeric_vars) {
+  data[, var] <- as.numeric(data[, var])
+}
+
+# 遍历所有数值变量，在同一张图里绘制不同家庭类型的散点图+回归线
+for (x_var in numeric_vars) {
+  p <- ggplot(data, aes_string(x = x_var, y = "Total.Number.of.Family.members", color = "Type.of.Household")) +
+    geom_jitter(alpha = 0.6, size = 2, width = 0.2, height = 0) +  # 随机偏移，防止点重叠
+    geom_smooth(method = "lm", se = FALSE, aes(group = Type.of.Household), size = 1) +  # 按家庭类型分别绘制回归线
+    labs(title = paste(x_var, "vs Total.Number.of.Family.members (按家庭类型)"), 
+         x = x_var, y = "家庭人口数") +
+    theme_minimal() +
+    theme(legend.title = element_text(size = 12), axis.text = element_text(size = 12))
+  
+  print(p)  # 显示图形
+}
+
+```
+
+3.以是否有电分类
+
+```{r}
+# 确保 Electricity 是因子变量
+data$Electricity <- as.factor(data$Electricity)
+
+# 按是否有电分类数据
+data_with_electricity <- subset(data, Electricity == "1")  # 仅包含有电的家庭
+data_without_electricity <- subset(data, Electricity == "0") # 仅包含无电的家庭
+
+# 检查数据集大小
+cat("有电的家庭数量:", nrow(data_with_electricity), "行\n")
+cat("无电的家庭数量:", nrow(data_without_electricity), "行\n")
+
+```
+
+```{r}
+
+# 设定数值变量
+numeric_vars <- c("Total.Household.Income", "Total.Food.Expenditure", 
+                  "Household.Head.Age", "House.Floor.Area", 
+                  "House.Age", "Number.of.bedrooms")
+
+# 确保 Electricity 是因子变量（以便颜色分组）
+data$Electricity <- as.factor(data$Electricity)
+
+# 确保所有变量为数值型
+for (var in numeric_vars) {
+  data[, var] <- as.numeric(data[, var])
+}
+
+# 遍历所有数值变量，在同一张图里绘制有电/无电家庭的散点图+回归线
+for (x_var in numeric_vars) {
+  p <- ggplot(data, aes_string(x = x_var, y = "Total.Number.of.Family.members", color = "Electricity")) +
+    geom_jitter(alpha = 0.6, size = 2, width = 0.2, height = 0) +  # 添加抖动，防止点重叠
+    geom_smooth(method = "lm", se = FALSE, aes(group = Electricity), size = 1) +  # 按是否有电分别绘制回归线
+    labs(title = paste(x_var, "vs Total.Number.of.Family.members (按是否有电)"), 
+         x = x_var, y = "家庭人口数") +
+    scale_color_manual(values = c("0" = "red", "1" = "blue"), labels = c("无电", "有电")) +  # 手动设置颜色和标签
+    theme_minimal() +
+    theme(legend.title = element_text(size = 12), axis.text = element_text(size = 12))
+  
+  print(p)  # 显示图形
+}
+```
