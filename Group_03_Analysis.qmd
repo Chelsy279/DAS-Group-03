@@ -18,7 +18,9 @@ execute:
 
 ```{r}
 library(ggplot2)
+library(GGally)
 library(tidyverse)
+library(dplyr)
 library(gt)
 library(patchwork)
 library(gridExtra)
@@ -30,11 +32,119 @@ library(moderndive)
 # Data Cleaning
 
 ```{r}
+# Read the data set
 Data_FIES <- read.csv("dataset03.csv")
+# Tidy the data
+FIES <- Data_FIES %>%
+  # Place the dependent variable in the first column and delete the unique value
+  select(Total.Number.of.Family.members, everything(), -Region) %>%
+  # Convert categorical variables into factors
+  mutate(
+    Household.Head.Sex = as.factor(Household.Head.Sex),
+    Type.of.Household = as.factor(Type.of.Household),
+    Electricity = as.factor(Electricity)) %>%
+  # Remove Missing Values
+  drop_na()
+
 ```
 
 # Exploratory Data Analysis
 
+```{r}
+str(FIES) # Check data structure 
+summary(FIES) # Get summary statistics of all variables  
+dim(FIES) # Check dataset dimensions (number of rows and columns)
+
+# Compute mean and variance of the dependent variable
+mean <- mean(FIES$Total.Number.of.Family.members)
+var <- var(FIES$Total.Number.of.Family.members)
+var_ratio <- var/mean
+# var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
+
+```
+
+```{r}
+# Tables of summary statistics
+
+```
+
+
+```{r}
+# Heat maps for numerical variables
+
+```
+
+```{r}
+# Boxplots for Categorical explanatory variables
+ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fill = Household.Head.Sex)) +
+  geom_boxplot() +
+  labs(title = "Family Size by Household Head's Gender", x = "Household Head's Gender", y = "Family Size") 
+
+ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill = Type.of.Household)) +
+  geom_boxplot() +
+  labs(title = "Family Size by Household Type", x = "Household Type", y = "Family Size") 
+
+ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Electricity)) +
+  geom_boxplot() +
+  labs(title = "Family Size by Electricity Access", x = "Electricity (0 = No, 1 = Yes)", y = "Family Size") 
+
+```
+
 # Formal Data Analysis
+
+```{r}
+# Compute Correlation Matrix and Scatterplot Matrix
+numeric_vars <- select(FIES,where(is.numeric))
+cor_matrix <- cor(numeric_vars)
+print(cor_matrix)
+ggpairs(numeric_vars)
+
+```
+
+```{r}
+# Fit a Poisson regression model
+poisson_model <- glm(Total.Number.of.Family.members ~ 
+                       Total.Household.Income + 
+                       Total.Food.Expenditure + 
+                       Household.Head.Age + 
+                       House.Floor.Area +
+                       House.Age +
+                       Number.of.bedrooms +
+                       Household.Head.Sex +
+                       Type.of.Household +
+                       Electricity, 
+                     family = poisson(link = "log"), 
+                     data = FIES)
+summary(poisson_model)
+```
+
+```{r}
+# Check the Relative Risk(RR)
+exp(coef(poisson_model)) 
+# For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+
+```
+
+```{r}
+# plot the Pearson and deviance residuals against the linear predictor
+resp <- resid(poisson_model, type = "pearson")
+resd <- resid(poisson_model, type = "deviance")
+p1 <- ggplot(poisson_model, aes(sample = resp)) + geom_point(stat = "qq", color = "steelblue") +
+  ylab("Pearson residuals")
+
+p2 <- ggplot(poisson_model, aes(sample = resd)) + geom_point(stat = "qq", color = "steelblue") +
+  ylab("Deviance residuals")
+
+p3 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resp))+
+  geom_point(col = "steelblue") +
+  ylab("Pearson residuals") + xlab("Linear predictor")
+
+p4 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resd))+
+  geom_point(col = "steelblue") +
+  ylab("Deviance residuals") + xlab("Linear predictor")
+
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+
+```
 
 # Conclusion
