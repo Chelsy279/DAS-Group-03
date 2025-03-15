@@ -45,6 +45,7 @@ FIES <- Data_FIES %>%
     Electricity = as.factor(Electricity)) %>%
   # Remove Missing Values
   drop_na()
+
 ```
 
 # Exploratory Data Analysis
@@ -59,12 +60,14 @@ mean <- mean(FIES$Total.Number.of.Family.members)
 var <- var(FIES$Total.Number.of.Family.members)
 var_ratio <- var/mean
 # var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
+
 ```
 
 ```{r}
 # Tables of summary statistics
 
 ```
+
 
 ```{r}
 # Heat maps for numerical variables
@@ -84,6 +87,7 @@ ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill
 ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Electricity)) +
   geom_boxplot() +
   labs(title = "Family Size by Electricity Access", x = "Electricity (0 = No, 1 = Yes)", y = "Family Size") 
+
 ```
 
 # Formal Data Analysis
@@ -94,6 +98,7 @@ numeric_vars <- select(FIES,where(is.numeric))
 cor_matrix <- cor(numeric_vars)
 print(cor_matrix)
 ggpairs(numeric_vars)
+
 ```
 
 ```{r}
@@ -117,6 +122,7 @@ summary(poisson_model)
 # Check the Relative Risk(RR)
 exp(coef(poisson_model)) 
 # For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+
 ```
 
 ```{r}
@@ -138,6 +144,7 @@ p4 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resd
   ylab("Deviance residuals") + xlab("Linear predictor")
 
 grid.arrange(p1, p2, p3, p4, nrow = 2)
+
 ```
 
 # Conclusion
