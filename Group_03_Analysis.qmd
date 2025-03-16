@@ -25,6 +25,7 @@ library(gt)
 library(patchwork)
 library(gridExtra)
 library(moderndive)
+library(ggcorrplot)
 ```
 
 # Introduction
@@ -200,8 +201,157 @@ Income variability, measured by standard deviation, was much higher for househol
 
 ```{r}
 # Heat maps for numerical variables
+# Select all non-factor (numeric) variables
+numeric_vars <- FIES[, sapply(FIES, is.numeric)]
+
+# Compute the correlation matrix (excluding missing values)
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# Plot the correlation heatmap
+ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white", "orange"), outline.color = "black", 
+           legend.title = "Correlation") +
+  labs(title = "Correlation Matrix for Numeric Variables") +
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+    axis.text.y = element_text(size = 9),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16)
+  )
 
 ```
+
+```{r}
+# Ensure numeric variables are defined
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# Ensure all numeric variables are of type numeric
+for (var in numeric_vars) {
+  FIES[, var] <- as.numeric(FIES[, var])
+}
+
+# Data by gender
+data_male <- subset(FIES, Household.Head.Sex == "Male")
+data_female <- subset(FIES, Household.Head.Sex == "Female")
+
+# Compute the correlation matrix for male household heads
+cor_matrix_male <- cor(data_male[, numeric_vars], use = "complete.obs")
+
+# Compute the correlation matrix for female household heads
+cor_matrix_female <- cor(data_female[, numeric_vars], use = "complete.obs")
+
+# Plot correlation matrix for male household heads
+print(ggcorrplot(cor_matrix_male, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "correlation") + 
+      labs(title = "Correlation matrix for male household heads") +
+      theme(
+        axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16)
+      ))
+
+# Plot correlation matrix for female household heads
+print(ggcorrplot(cor_matrix_female, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "correlation") + 
+      labs(title = "Correlation matrix for female household heads") +
+      theme(
+        axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16)
+      ))
+
+```
+
+```{r}
+# Make sure Electricity is a factor variable
+FIES$Electricity <- as.factor(FIES$Electricity)
+
+# Define numeric variables
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# Ensure all variables are numeric
+for (var in numeric_vars) {
+  FIES[, var] <- as.numeric(FIES[, var])
+}
+
+# Check if Electricity is encoded as "0"/"1" or as 0/1
+unique(FIES$Electricity)
+
+# Split the dataset based on electricity availability
+if (is.numeric(FIES$Electricity)) {
+  data_with_electricity <- subset(FIES, Electricity == 1)  # Households with electricity
+  data_without_electricity <- subset(FIES, Electricity == 0)  # Households without electricity
+} else {
+  data_with_electricity <- subset(FIES, Electricity == "1")  # Households with electricity
+  data_without_electricity <- subset(FIES, Electricity == "0")  # Households without electricity
+}
+
+# Compute the correlation matrix for households with electricity
+cor_matrix_with_electricity <- cor(data_with_electricity[, numeric_vars], use = "complete.obs")
+
+# Compute the correlation matrix for households without electricity
+cor_matrix_without_electricity <- cor(data_without_electricity[, numeric_vars], use = "complete.obs")
+
+# Plot the correlation heatmap for households with electricity
+print(ggcorrplot(cor_matrix_with_electricity, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "Correlation") + 
+        labs(title = "Correlation Matrix for Households with Electricity"))
+
+# Plot the correlation heatmap for households without electricity
+print(ggcorrplot(cor_matrix_without_electricity, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "Correlation") + 
+        labs(title = "Correlation Matrix for Households without Electricity"))
+```
+
+```{r}
+# Ensure Type.of.Household is a factor variable
+FIES$Type.of.Household <- as.factor(FIES$Type.of.Household)
+
+# Get all household types
+household_types <- levels(FIES$Type.of.Household)
+
+# Define numeric variables
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# Ensure all variables are numeric
+for (var in numeric_vars) {
+  FIES[, var] <- as.numeric(FIES[, var])
+}
+
+# Iterate through each household type, compute the correlation matrix, and plot the heatmap
+for (type in household_types) {
+  # Extract data for the current household type
+  subset_data <- subset(FIES, Type.of.Household == type)
+  
+  # Compute the correlation matrix (removing missing values)
+  cor_matrix <- cor(subset_data[, numeric_vars], use = "complete.obs")
+  
+  # Plot the correlation heatmap
+  print(ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+                   colors = c("blue", "white", "orange"), outline.color = "black", 
+                   legend.title = "Correlation") + 
+          labs(title = paste("Household Type:", type, "Correlation Matrix")) +
+          theme(
+            axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),  # Increase X-axis font size, rotate 45°
+            axis.text.y = element_text(size = 9),  # Increase Y-axis font size
+            legend.text = element_text(size = 14),  # Increase legend font size
+            legend.title = element_text(size = 16)  # Increase legend title font size
+          ))
+}
+```
+
 
 ```{r}
 # Boxplots for Categorical explanatory variables
