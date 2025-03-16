@@ -1,0 +1,425 @@
+---
+title: "Analysis of the FIES recorded in the Philippines"
+author: "Group_03"
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+  pdf: default
+editor_options: 
+  chunk_output_type: console
+execute:
+  echo: false
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+library(ggplot2)
+library(GGally)
+library(tidyverse)
+library(dplyr)
+library(gt)
+library(patchwork)
+library(gridExtra)
+library(moderndive)
+library(ggcorrplot)
+```
+
+# Introduction
+
+# Data Cleaning
+
+```{r}
+# Read the data set
+Data_FIES <- read.csv("dataset03.csv")
+# Tidy the data
+FIES <- Data_FIES %>%
+  # Place the dependent variable in the first column and delete the unique value
+  select(Total.Number.of.Family.members, everything(), -Region) %>%
+  # Convert categorical variables into factors
+  mutate(
+    Household.Head.Sex = as.factor(Household.Head.Sex),
+    Type.of.Household = as.factor(Type.of.Household),
+    Electricity = as.factor(Electricity)) %>%
+  # Remove Missing Values
+  drop_na()
+```
+
+# Exploratory Data Analysis
+
+```{r}
+str(FIES) # Check data structure 
+summary(FIES) # Get summary statistics of all variables  
+dim(FIES) # Check dataset dimensions (number of rows and columns)
+
+# Compute mean and variance of the dependent variable
+mean <- mean(FIES$Total.Number.of.Family.members)
+var <- var(FIES$Total.Number.of.Family.members)
+var_ratio <- var/mean
+# var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
+```
+
+## Tables of summary statistics
+
+Summary statistics on Total.Household.Income with appropriate comments.
+
+```{r}
+# Tables of summary statistics
+
+FIES |>
+  summarize('Mean' = mean(Total.Household.Income),
+            'Median' = median(Total.Household.Income),
+            'St.Dev' = sd(Total.Household.Income),
+            'Min' = min(Total.Household.Income),
+            'Max' = max(Total.Household.Income),
+            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+            'Sample_size' = n()
+  ) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  ) |> 
+  tab_header(
+    title = md("Table 1: Summary statistics on Total Household Income")
+  )|> 
+  tab_options(
+    table.border.top.style = "none" 
+  )
+```
+
+**Table 1** presents summary statistics on total household income for 1,887 households. The mean income (214,057.78) is significantly higher than the median (131,806.00), indicating a right-skewed distribution influenced by high-income households. The high standard deviation (232,931.78) and large income range (16,238.00 to 2,598,050.00) suggest substantial variability. The interquartile range (163,631.00) indicates a considerable spread in the middle 50% of the data. These statistics highlight income inequality, with a few households earning significantly more than the majority.
+
+```{r}
+FIES |>
+  summarize('Mean' = mean(Total.Household.Income),
+            'Median' = median(Total.Household.Income),
+            'St.Dev' = sd(Total.Household.Income),
+            'Min' = min(Total.Household.Income),
+            'Max' = max(Total.Household.Income),
+            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+            'Sample_size' = n(),
+            .by = Household.Head.Sex) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  )|> 
+  tab_header(
+    title = md("Table 2: Summary statistics on Total.Household.Income by Household.Head.Sex with appropriate comments")
+  )|> 
+  tab_options(
+    table.border.top.style = "none" 
+  )
+```
+
+**Table 2** summarizes total household income by household head sex. The sample includes more male-headed households (1,487) than female-headed households (400). On average, female-headed households had slightly higher mean (223,017.17) and median (137,236.00) incomes than male-headed households (211,647.72 and 131,345.00, respectively).
+
+Income variability, measured by standard deviation, was slightly higher for female-headed households (242,190.15) than for male-headed households (230,402.23). The interquartile range also indicates greater spread in female-headed households (182,949.50 vs. 158,352.00). However, male-headed households exhibited greater overall income range, with a higher maximum income (2,598,050.00 vs. 1,779,497.00).
+
+```{r}
+FIES |>
+  summarize('Mean' = mean(Total.Household.Income),
+            'Median' = median(Total.Household.Income),
+            'St.Dev' = sd(Total.Household.Income),
+            'Min' = min(Total.Household.Income),
+            'Max' = max(Total.Household.Income),
+            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+            'Sample_size' = n(),
+            .by = Type.of.Household) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  )|> 
+  tab_header(
+    title = md("Table 3: Summary statistics on Total.Household.Income by Type.of.Household with appropriate comments")
+  )|> 
+  tab_options(
+    table.border.top.style = "none" 
+  )
+```
+
+**Table 3** summarizes household income by household type. Single-family households were the most common (1,311), followed by extended families (567) and households with two or more nonrelated members (9). Extended families had higher mean income (260,583.27) than single families (193,543.35), while nonrelated-member households had the highest mean income (271,220.22). Median income was lowest for single-family households (122,417.00) and highest for extended families (164,525.00).
+
+Income variability, measured by standard deviation, was highest for extended families (257,311.39) and lowest for nonrelated-member households (181,585.01). The interquartile range further supports this trend, with the smallest IQR for single-family households (137,921.50) and the largest for nonrelated-member households (296,117.00).
+
+```{r}
+#
+FIES |>
+  summarize('Mean' = mean(Total.Household.Income),
+            'Median' = median(Total.Household.Income),
+            'St.Dev' = sd(Total.Household.Income),
+            'Min' = min(Total.Household.Income),
+            'Max' = max(Total.Household.Income),
+            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+            'Sample_size' = n(),
+            .by = Electricity) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  )|> 
+  tab_header(
+    title = md("Table 4: Summary statistics on Total.Household.Income by Electricity with appropriate comments")
+  )|> 
+  tab_options(
+    table.border.top.style = "none" 
+  )
+```
+
+**Table 4** summarizes household income by electricity access. Most households had electricity (1,630 vs. 257). Households with electricity had significantly higher mean (234,234.18) and median (144,825.00) incomes than those without (86,090.73 and 72,276.00, respectively).
+
+Income variability, measured by standard deviation, was much higher for households with electricity (243,677.00) than for those without (53,381.06). The interquartile range also reflects this disparity, being much larger for households with electricity (176,253.50) compared to those without (49,605.00).
+
+```{r}
+# Heat maps for numerical variables
+# Select all non-factor (numeric) variables
+numeric_vars <- FIES[, sapply(FIES, is.numeric)]
+
+# Compute the correlation matrix (excluding missing values)
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# Plot the correlation heatmap
+ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white", "orange"), outline.color = "black", 
+           legend.title = "Correlation") +
+  labs(title = "Correlation Matrix for Numeric Variables") +
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+    axis.text.y = element_text(size = 9),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16)
+  )
+
+```
+
+```{r}
+# Ensure numeric variables are defined
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# Ensure all numeric variables are of type numeric
+for (var in numeric_vars) {
+  FIES[, var] <- as.numeric(FIES[, var])
+}
+
+# Data by gender
+data_male <- subset(FIES, Household.Head.Sex == "Male")
+data_female <- subset(FIES, Household.Head.Sex == "Female")
+
+# Compute the correlation matrix for male household heads
+cor_matrix_male <- cor(data_male[, numeric_vars], use = "complete.obs")
+
+# Compute the correlation matrix for female household heads
+cor_matrix_female <- cor(data_female[, numeric_vars], use = "complete.obs")
+
+# Plot correlation matrix for male household heads
+print(ggcorrplot(cor_matrix_male, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "correlation") + 
+      labs(title = "Correlation matrix for male household heads") +
+      theme(
+        axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16)
+      ))
+
+# Plot correlation matrix for female household heads
+print(ggcorrplot(cor_matrix_female, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "correlation") + 
+      labs(title = "Correlation matrix for female household heads") +
+      theme(
+        axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16)
+      ))
+
+```
+
+```{r}
+# Make sure Electricity is a factor variable
+FIES$Electricity <- as.factor(FIES$Electricity)
+
+# Define numeric variables
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# Ensure all variables are numeric
+for (var in numeric_vars) {
+  FIES[, var] <- as.numeric(FIES[, var])
+}
+
+# Check if Electricity is encoded as "0"/"1" or as 0/1
+unique(FIES$Electricity)
+
+# Split the dataset based on electricity availability
+if (is.numeric(FIES$Electricity)) {
+  data_with_electricity <- subset(FIES, Electricity == 1)  # Households with electricity
+  data_without_electricity <- subset(FIES, Electricity == 0)  # Households without electricity
+} else {
+  data_with_electricity <- subset(FIES, Electricity == "1")  # Households with electricity
+  data_without_electricity <- subset(FIES, Electricity == "0")  # Households without electricity
+}
+
+# Compute the correlation matrix for households with electricity
+cor_matrix_with_electricity <- cor(data_with_electricity[, numeric_vars], use = "complete.obs")
+
+# Compute the correlation matrix for households without electricity
+cor_matrix_without_electricity <- cor(data_without_electricity[, numeric_vars], use = "complete.obs")
+
+# Plot the correlation heatmap for households with electricity
+print(ggcorrplot(cor_matrix_with_electricity, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "Correlation") + 
+        labs(title = "Correlation Matrix for Households with Electricity"))
+
+# Plot the correlation heatmap for households without electricity
+print(ggcorrplot(cor_matrix_without_electricity, type = "full", lab = TRUE, lab_size = 4, 
+                 colors = c("blue", "white", "orange"), outline.color = "black", 
+                 legend.title = "Correlation") + 
+        labs(title = "Correlation Matrix for Households without Electricity"))
+```
+
+```{r}
+# Ensure Type.of.Household is a factor variable
+FIES$Type.of.Household <- as.factor(FIES$Type.of.Household)
+
+# Get all household types
+household_types <- levels(FIES$Type.of.Household)
+
+# Define numeric variables
+numeric_vars <- c("Total.Number.of.Family.members", "Total.Household.Income", 
+                  "Total.Food.Expenditure", "Household.Head.Age", 
+                  "House.Floor.Area", "House.Age", "Number.of.bedrooms")
+
+# Ensure all variables are numeric
+for (var in numeric_vars) {
+  FIES[, var] <- as.numeric(FIES[, var])
+}
+
+# Iterate through each household type, compute the correlation matrix, and plot the heatmap
+for (type in household_types) {
+  # Extract data for the current household type
+  subset_data <- subset(FIES, Type.of.Household == type)
+  
+  # Compute the correlation matrix (removing missing values)
+  cor_matrix <- cor(subset_data[, numeric_vars], use = "complete.obs")
+  
+  # Plot the correlation heatmap
+  print(ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+                   colors = c("blue", "white", "orange"), outline.color = "black", 
+                   legend.title = "Correlation") + 
+          labs(title = paste("Household Type:", type, "Correlation Matrix")) +
+          theme(
+            axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),  # Increase X-axis font size, rotate 45°
+            axis.text.y = element_text(size = 9),  # Increase Y-axis font size
+            legend.text = element_text(size = 14),  # Increase legend font size
+            legend.title = element_text(size = 16)  # Increase legend title font size
+          ))
+}
+```
+
+
+```{r}
+# Boxplots for Categorical explanatory variables
+ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fill = Household.Head.Sex)) +
+  geom_boxplot() +
+  labs(title = "Family Size by Household Head's Gender", x = "Household Head's Gender", y = "Family Size") 
+
+ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill = Type.of.Household)) +
+  geom_boxplot() +
+  labs(title = "Family Size by Household Type", x = "Household Type", y = "Family Size") 
+
+ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Electricity)) +
+  geom_boxplot() +
+  labs(title = "Family Size by Electricity Access", x = "Electricity (0 = No, 1 = Yes)", y = "Family Size") 
+```
+
+# Formal Data Analysis
+
+```{r}
+# Compute Correlation Matrix and Scatterplot Matrix
+numeric_vars <- select(FIES,where(is.numeric))
+cor_matrix <- cor(numeric_vars)
+print(cor_matrix)
+ggpairs(numeric_vars)
+```
+
+```{r}
+# Fit a Poisson regression model
+poisson_model <- glm(Total.Number.of.Family.members ~ 
+                       Total.Household.Income + 
+                       Total.Food.Expenditure + 
+                       Household.Head.Age + 
+                       House.Floor.Area +
+                       House.Age +
+                       Number.of.bedrooms +
+                       Household.Head.Sex +
+                       Type.of.Household +
+                       Electricity, 
+                     family = poisson(link = "log"), 
+                     data = FIES)
+summary(poisson_model)
+```
+
+```{r}
+# Check the Relative Risk(RR)
+exp(coef(poisson_model)) 
+# For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+```
+
+```{r}
+# plot the Pearson and deviance residuals against the linear predictor
+resp <- resid(poisson_model, type = "pearson")
+resd <- resid(poisson_model, type = "deviance")
+p1 <- ggplot(poisson_model, aes(sample = resp)) + geom_point(stat = "qq", color = "steelblue") +
+  ylab("Pearson residuals")
+
+p2 <- ggplot(poisson_model, aes(sample = resd)) + geom_point(stat = "qq", color = "steelblue") +
+  ylab("Deviance residuals")
+
+p3 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resp))+
+  geom_point(col = "steelblue") +
+  ylab("Pearson residuals") + xlab("Linear predictor")
+
+p4 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resd))+
+  geom_point(col = "steelblue") +
+  ylab("Deviance residuals") + xlab("Linear predictor")
+
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+```
+
+# Conclusion
