@@ -31,6 +31,10 @@ library(ggcorrplot)
 
 # Introduction
 
+In Philippine, FIES(Family Income and Expenditure Survey), which is undertaken every three years, is aimed at providing data on family income and expenditure. This dataset, comes from the FIES recorded in the Philippines, is analysed in this report.
+
+In particular, this report presents numerical and graphical summaries of FIES and fits a Generalized Linear Model(GLM) to analyze which household related variables influence the number of people living in a household.
+
 # Data Cleaning
 
 ```{r}
@@ -49,6 +53,8 @@ FIES <- Data_FIES %>%
   drop_na()
 
 ```
+
+We read the data and tidy the data for further analysis. We move the implicit variable to the first row and delete the region which has no difference in the data. Household head sex, type of household, and electricity were converted to factors to ensure that the statistical model correctly handled the categorical variables. Also we remove missing values to ensure data integrity.
 
 # Exploratory Data Analysis
 
@@ -102,21 +108,24 @@ ggplot(FIES, aes(x = Total.Number.of.Family.members)) +
 
 ```
 
-From @tbl-y, 
+From @tbl-y, we can see our dataset includes 1887 samples, which is a sufficiently large sample size to ensure reliability. The mean value (4.68) and median (4.00) are very close, suggesting a roughly symmetric distribution. However, the median is slightly lower than the mean hints at a mild right skew in the data. The standard deviation (2.30) indicates moderate variability around the mean.
 
-@fig-y shows that
+@fig-y shows a strong right-skewed distribution of frequency data. The highest bar (around 300) is concentrated on the left side of the x-axis, indicating that most values are in the lower ranges. The frequency sharply decreased toward the right, with the far-right bars approaching 0, shows taht rare occurrences in higher-value intervals.
 
 Then check the variance of the dependent variable and compare with the mean:
+
 ```{r}
+mean <- mean(FIES$Total.Number.of.Family.members)
 var <- var(FIES$Total.Number.of.Family.members)
 var_ratio <- var/mean
 
 ```
+
 var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
 
 Then we separate independent variables into categorical variables and numerical variables for analysis.
 
-(1) Categorical Variables
+1.  Categorical Variables
 
 ```{r}
 #| label: tbl-y-sex
@@ -156,9 +165,9 @@ ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fil
 
 ```
 
-From @tbl-y-sex,
+@tbl-y-sex compares family size statistics between female-headed and male-headed households. Female-headed households exhibit smaller family size, with a mean of 3.83 and a median of 3.00, while male-headed households show significantly larger families (mean = 4.91, median = 5.00). Despite similar variability in both groups (standard deviations of nearly 2.3), the male-headed households display a broader range. Notably, the dataset is heavily skewed toward male-headed households (1487 samples vs. 400 female samples), which could influence the result. Both groups share identical interquartile ranges (IQR = 3.00), suggesting comparable central clustering of data.
 
-@fig-y-sex shows that
+@fig-y-sex shows that male-headed households exhibit a higher median family size of 5 members, compared to female-headed households with a median of 4 members. Both groups shows moderate variability in their distribution, but male-headed families display a wider range, with extreme outliers reaching up to 16 members which higher than the maximum of 12 members observed in female-headed households. This visualizes the tendency for male-led families to hold a larger household size.
 
 ```{r}
 #| label: tbl-y-household
@@ -198,9 +207,9 @@ ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill
 
 ```
 
-From @tbl-y-household,
+@tbl-y-household summarizes family size statistics across three household types. Single-family households have the smallest average family size (mean = 4.14, median = 4.00) with a large sample size (1311). Extended families show significantly larger family sizes (mean=5.88, median = 5.00) and a broader spread (max = 16). Households with two or more nonrelated members report the highest average (mean = 6.89, median - 6.00), but with a extremely small sample size (9) weakens reliability.
 
-@fig-y-household shows that
+@fig-y-household shows that extended families exhibit the highest median family size (5) with a broader range which is up to 16 members, indicating a potential outlier. Single families shows a lower median (4) and tighter clustering of data. It reflects a more consistent household size. Households with two or more nonrelated members have a median of 6 members. However it only have a sample size of 9 which weakens the reliability of this category.
 
 ```{r}
 #| label: tbl-y-electricity
@@ -240,11 +249,11 @@ ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Ele
 
 ```
 
-From @tbl-y-electricity,
+From @tbl-y-electricity, we can see households with electricity (1,630) are about six times more than those without (257). The mean values are nearly identical (4.70 vs. 4.67), but the median is slightly higher for households without electricity (5.00 vs. 4.00). The standard deviation is also slightly larger in the non-electric group (2.47 vs. 2.27), indicating a bit more variability. The maximum value is higher in the electricity group (16.00 vs. 12.00), suggesting a wider range. Both groups have the same interquartile range (3.00), meaning their middle 50% distributions are similar. These differences can be visualized more clearly with boxplots.
 
-@fig-y-electricity shows that
+@fig-y-electricity shows that households without electricity tend to have a slightly larger median family size compared to those with electricity. However, the distributions of family sizes in both groups are quite similar. The spread of family sizes in both groups is also comparable, as indicated by the interquartile range. Additionally, both groups exhibit several outliers, representing families with unusually large sizes, as shown by the points beyond the "whiskers" of the boxplots.
 
-(2) Numerical Variables
+2.  Numerical Variables
 
 ```{r}
 #| label: fig-his-num
@@ -271,7 +280,15 @@ p6 <- ggplot(FIES, aes(x = Number.of.bedrooms)) +
 (p1 | p2 | p3) / (p4 | p5 | p6)
 ```
 
-From @fig-his-num,we can see the distributions of Household Income, Household Expenditure, and House Floor Area are right-skewed, so applying a log transformation would be beneficial when fitting a Poisson model. Household Head Age follows an approximately normal distribution, so no transformation is needed. House Age exhibits a bimodal distribution, suggesting that binning it into categorical groups would be appropriate. The Number of Bedrooms is a discrete variable and should also be converted into a categorical variable for analysis.
+From @fig-his-num, we can see the distributions of Household Income, Household Expenditure, and House Floor Area are right-skewed, so applying a log transformation would be beneficial when fitting a Poisson model. Household Head Age follows an approximately normal distribution, so no transformation is needed. House Age exhibits a bimodal distribution, suggesting that binning it into categorical groups would be appropriate. The Number of Bedrooms is a discrete variable and should also be converted into a categorical variable for analysis.
+
+The distribution of household head age is approximately normal, with most household heads falling within the 30-60 age range. This suggests that middle-aged individuals are the primary decision-makers in households.
+
+The distribution of house floor area is strongly right-skewed, with most houses having relatively small areas, while a few have significantly larger ones. The scarcity of large houses may be due to their higher costs.
+
+The distribution of house age exhibits a slight bimodal pattern, indicating the presence of two types of houses: newly built and older homes.
+
+The number of bedrooms is a discrete variable, with most houses having 2 or 3 bedrooms, while houses with 4 or more bedrooms are less common.
 
 ```{r}
 # Convert 'House.Age' to categorical variable
@@ -288,7 +305,7 @@ FIES <- FIES %>% select(-House.Age)
 ```{r}
 # Convert 'Number.of.bedrooms' to categorical variable
 FIES$Bedroom.Category <- cut(FIES$Number.of.bedrooms, 
-                             breaks = c(0, 1, 3, 5, Inf), 
+                             breaks = c(-Inf, 1, 3, 5, Inf), 
                              labels = c("Small", "Medium", "Large", "Luxury"),
                              right = TRUE)
 
@@ -301,6 +318,7 @@ FIES <- FIES %>% select(-Number.of.bedrooms)
 ```
 
 Then we can use the heat map to check the correlation between numerical variables and dependent variable:
+
 ```{r}
 #| label: fig-corr-num
 #| fig-cap: Heat map for numerical variables by 'Total.Number.of.Family.members' 
@@ -323,8 +341,7 @@ ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4,
 
 ```
 
-Form @fig-corr-num,
-
+Form @fig-corr-num, we can see income and expenditure are strongly correlated, reinforcing the expected relationship that higher-income households tend to spend more. Total.Number.of.Family.members influences Total.Food.expenditure, but its impact on household income is weaker. Household.head.age has a minor effect on most other variables, with a slight negative correlation with family size. House.Floor.Area shows some correlation with income, but not significantly with household.head.age.
 
 # Formal Data Analysis
 
@@ -354,7 +371,8 @@ exp(coef(poisson_model))
 ```
 
 ```{r}
-# plot the Pearson and deviance residuals against the linear predictor
+#| label: fig-residual
+#| fig-cap: The Pearson and deviance residuals against the linear predictor 
 resp <- resid(poisson_model, type = "pearson")
 resd <- resid(poisson_model, type = "deviance")
 p1 <- ggplot(poisson_model, aes(sample = resp)) + geom_point(stat = "qq", color = "steelblue") +
@@ -373,5 +391,8 @@ p4 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resd
 
 grid.arrange(p1, p2, p3, p4, nrow = 2)
 ```
+
+From @fig-residual, we can see the Q-Q plot shows that the tails deviate from the straight line, indicating that the residual distribution may not be normal, suggesting the presence of heavy tails or a violation of model assumptions.\
+The residuals vs. predicted values plot exhibits a funnel-shaped pattern, indicating heteroscedasticity, where the variance of the residuals increases as the predicted values grow.
 
 # Conclusion
