@@ -25,6 +25,8 @@ library(gt)
 library(patchwork)
 library(gridExtra)
 library(moderndive)
+library(ggcorrplot)
+
 ```
 
 # Introduction
@@ -45,6 +47,7 @@ FIES <- Data_FIES %>%
     Electricity = as.factor(Electricity)) %>%
   # Remove Missing Values
   drop_na()
+
 ```
 
 # Exploratory Data Analysis
@@ -54,27 +57,24 @@ str(FIES) # Check data structure
 summary(FIES) # Get summary statistics of all variables  
 dim(FIES) # Check dataset dimensions (number of rows and columns)
 
-# Compute mean and variance of the dependent variable
-mean <- mean(FIES$Total.Number.of.Family.members)
-var <- var(FIES$Total.Number.of.Family.members)
-var_ratio <- var/mean
-# var/mean=5.28/4.68=1.13â‰ˆ1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
 ```
 
-## Tables of summary statistics
+## Numerical summaries and Data visualization
 
-Summary statistics on Total.Household.Income with appropriate comments.
+Now we can take a look at the numerical summaries and data visualization of dependent variable shown in the following tables and plots:
 
 ```{r}
-# Tables of summary statistics
+#| label: tbl-y
+#| tbl-cap: Summary statistics for 'Total.Number.of.Family.members'
+#| tbl-cap-location: top
 
 FIES |>
-  summarize('Mean' = mean(Total.Household.Income),
-            'Median' = median(Total.Household.Income),
-            'St.Dev' = sd(Total.Household.Income),
-            'Min' = min(Total.Household.Income),
-            'Max' = max(Total.Household.Income),
-            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
             'Sample_size' = n()
   ) |>
   gt() |>
@@ -87,25 +87,49 @@ FIES |>
     Max = html("Maximum"),
     IQR = html("Interquartile Range"),
     Sample_size = html("Sample Size")
-  ) |> 
-  tab_header(
-    title = md("Table 1: Summary statistics on Total Household Income")
-  )|> 
-  tab_options(
-    table.border.top.style = "none" 
-  )
+  ) 
+
 ```
 
-**Table 1** presents summary statistics on total household income for 1,887 households. The mean income (214,057.78) is significantly higher than the median (131,806.00), indicating a right-skewed distribution influenced by high-income households. The high standard deviation (232,931.78) and large income range (16,238.00 to 2,598,050.00) suggest substantial variability. The interquartile range (163,631.00) indicates a considerable spread in the middle 50% of the data. These statistics highlight income inequality, with a few households earning significantly more than the majority.
+```{r}
+#| label: fig-y
+#| fig-cap: Histogram of 'Total.Number.of.Family.members'
+
+# Visualize dependent variable distribution
+ggplot(FIES, aes(x = Total.Number.of.Family.members)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(x = "Number of Family Members", y = "Frequency")
+
+```
+
+From @tbl-y, 
+
+@fig-y shows that
+
+Then check the variance of the dependent variable and compare with the mean:
+```{r}
+var <- var(FIES$Total.Number.of.Family.members)
+var_ratio <- var/mean
+
+```
+var/mean=5.28/4.68=1.13¡Ö1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
+
+Then we separate independent variables into categorical variables and numerical variables for analysis.
+
+(1) Categorical Variables
 
 ```{r}
+#| label: tbl-y-sex
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Household.Head.Sex' 
+#| tbl-cap-location: top
+
 FIES |>
-  summarize('Mean' = mean(Total.Household.Income),
-            'Median' = median(Total.Household.Income),
-            'St.Dev' = sd(Total.Household.Income),
-            'Min' = min(Total.Household.Income),
-            'Max' = max(Total.Household.Income),
-            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
             'Sample_size' = n(),
             .by = Household.Head.Sex) |>
   gt() |>
@@ -118,27 +142,36 @@ FIES |>
     Max = html("Maximum"),
     IQR = html("Interquartile Range"),
     Sample_size = html("Sample Size")
-  )|> 
-  tab_header(
-    title = md("Table 2: Summary statistics on Total.Household.Income by Household.Head.Sex with appropriate comments")
-  )|> 
-  tab_options(
-    table.border.top.style = "none" 
   )
+
 ```
 
-**Table 2** summarizes total household income by household head sex. The sample includes more male-headed households (1,487) than female-headed households (400). On average, female-headed households had slightly higher mean (223,017.17) and median (137,236.00) incomes than male-headed households (211,647.72 and 131,345.00, respectively).
+```{r}
+#| label: fig-y-sex
+#| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Household.Head.Sex'
 
-Income variability, measured by standard deviation, was slightly higher for female-headed households (242,190.15) than for male-headed households (230,402.23). The interquartile range also indicates greater spread in female-headed households (182,949.50 vs. 158,352.00). However, male-headed households exhibited greater overall income range, with a higher maximum income (2,598,050.00 vs. 1,779,497.00).
+ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fill = Household.Head.Sex)) +
+  geom_boxplot() +
+  labs(x = "Household Head's Gender", y = "Family Size") 
+
+```
+
+From @tbl-y-sex,
+
+@fig-y-sex shows that
 
 ```{r}
+#| label: tbl-y-household
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Type.of.Household' 
+#| tbl-cap-location: top
+
 FIES |>
-  summarize('Mean' = mean(Total.Household.Income),
-            'Median' = median(Total.Household.Income),
-            'St.Dev' = sd(Total.Household.Income),
-            'Min' = min(Total.Household.Income),
-            'Max' = max(Total.Household.Income),
-            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
             'Sample_size' = n(),
             .by = Type.of.Household) |>
   gt() |>
@@ -151,28 +184,36 @@ FIES |>
     Max = html("Maximum"),
     IQR = html("Interquartile Range"),
     Sample_size = html("Sample Size")
-  )|> 
-  tab_header(
-    title = md("Table 3: Summary statistics on Total.Household.Income by Type.of.Household with appropriate comments")
-  )|> 
-  tab_options(
-    table.border.top.style = "none" 
   )
+
 ```
 
-**Table 3** summarizes household income by household type. Single-family households were the most common (1,311), followed by extended families (567) and households with two or more nonrelated members (9). Extended families had higher mean income (260,583.27) than single families (193,543.35), while nonrelated-member households had the highest mean income (271,220.22). Median income was lowest for single-family households (122,417.00) and highest for extended families (164,525.00).
+```{r}
+#| label: fig-y-household
+#| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Type.of.Household'
 
-Income variability, measured by standard deviation, was highest for extended families (257,311.39) and lowest for nonrelated-member households (181,585.01). The interquartile range further supports this trend, with the smallest IQR for single-family households (137,921.50) and the largest for nonrelated-member households (296,117.00).
+ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill = Type.of.Household)) +
+  geom_boxplot() +
+  labs(x = "Household Type", y = "Family Size") 
+
+```
+
+From @tbl-y-household,
+
+@fig-y-household shows that
 
 ```{r}
-#
+#| label: tbl-y-electricity
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Electricity' 
+#| tbl-cap-location: top
+
 FIES |>
-  summarize('Mean' = mean(Total.Household.Income),
-            'Median' = median(Total.Household.Income),
-            'St.Dev' = sd(Total.Household.Income),
-            'Min' = min(Total.Household.Income),
-            'Max' = max(Total.Household.Income),
-            'IQR' = quantile(Total.Household.Income,0.75)-quantile(Total.Household.Income,0.25),
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
             'Sample_size' = n(),
             .by = Electricity) |>
   gt() |>
@@ -185,73 +226,143 @@ FIES |>
     Max = html("Maximum"),
     IQR = html("Interquartile Range"),
     Sample_size = html("Sample Size")
-  )|> 
-  tab_header(
-    title = md("Table 4: Summary statistics on Total.Household.Income by Electricity with appropriate comments")
-  )|> 
-  tab_options(
-    table.border.top.style = "none" 
   )
-```
-
-**Table 4** summarizes household income by electricity access. Most households had electricity (1,630 vs. 257). Households with electricity had significantly higher mean (234,234.18) and median (144,825.00) incomes than those without (86,090.73 and 72,276.00, respectively).
-
-Income variability, measured by standard deviation, was much higher for households with electricity (243,677.00) than for those without (53,381.06). The interquartile range also reflects this disparity, being much larger for households with electricity (176,253.50) compared to those without (49,605.00).
-
-```{r}
-# Heat maps for numerical variables
 
 ```
 
 ```{r}
-# Boxplots for Categorical explanatory variables
-ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fill = Household.Head.Sex)) +
-  geom_boxplot() +
-  labs(title = "Family Size by Household Head's Gender", x = "Household Head's Gender", y = "Family Size") 
-
-ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill = Type.of.Household)) +
-  geom_boxplot() +
-  labs(title = "Family Size by Household Type", x = "Household Type", y = "Family Size") 
+#| label: fig-y-electricity
+#| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Electricity'
 
 ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Electricity)) +
   geom_boxplot() +
-  labs(title = "Family Size by Electricity Access", x = "Electricity (0 = No, 1 = Yes)", y = "Family Size") 
+  labs(x = "Electricity (0 = No, 1 = Yes)", y = "Family Size") 
+
 ```
+
+From @tbl-y-electricity, we can see households with electricity (1,630) are about six times more than those without (257). The mean values are nearly identical (4.70 vs. 4.67), but the median is slightly higher for households without electricity (5.00 vs. 4.00). The standard deviation is also slightly larger in the non-electric group (2.47 vs. 2.27), indicating a bit more variability. The maximum value is higher in the electricity group (16.00 vs. 12.00), suggesting a wider range. Both groups have the same interquartile range (3.00), meaning their middle 50% distributions are similar. These differences can be visualized more clearly with boxplots.
+
+@fig-y-electricity shows that households without electricity tend to have a slightly larger median family size compared to those with electricity. However, the distributions of family sizes in both groups are quite similar. The spread of family sizes in both groups is also comparable, as indicated by the interquartile range. Additionally, both groups exhibit several outliers, representing families with unusually large sizes, as shown by the points beyond the ¡°whiskers¡± of the boxplots.
+
+(2) Numerical Variables
+
+```{r}
+#| label: fig-his-num
+#| fig-cap: Histograms for Numerical Variables
+
+p1 <- ggplot(FIES, aes(x = Total.Household.Income)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Household Income Distribution", x = "Household Income", y = "Count")
+p2 <- ggplot(FIES, aes(x = Total.Food.Expenditure)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Household Expenditure Distribution", x = "Household Expenditure", y = "Count")
+p3 <- ggplot(FIES, aes(x = Household.Head.Age)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Household Head Age Distribution", x = "Household Head Age", y = "Count")
+p4 <- ggplot(FIES, aes(x = House.Floor.Area)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "House Floor Area Distribution", x = "House Floor Area", y = "Count")
+p5 <- ggplot(FIES, aes(x = House.Age)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "House Age Distribution", x = "House Age", y = "Count")
+p6 <- ggplot(FIES, aes(x = Number.of.bedrooms)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Number of bedrooms Distribution", x = "Number of bedrooms", y = "Count")
+(p1 | p2 | p3) / (p4 | p5 | p6)
+```
+
+From @fig-his-num, we can see the distributions of household income and household expenditure exhibit a noticeable right skew, suggesting that applying a log transformation may be beneficial when fitting a Poisson model. This also indicates that most households have relatively low income, while a few have extremely high income, reflecting a significant income disparity within the population.  
+
+The distribution of household head age is approximately normal, with most household heads falling within the 30-60 age range. This suggests that middle-aged individuals are the primary decision-makers in households.  
+
+The distribution of house floor area is strongly right-skewed, with most houses having relatively small areas, while a few have significantly larger ones. The scarcity of large houses may be due to their higher costs.  
+
+The distribution of house age exhibits a slight bimodal pattern, indicating the presence of two types of houses: newly built and older homes.  
+
+The number of bedrooms is a discrete variable, with most houses having 2 or 3 bedrooms, while houses with 4 or more bedrooms are less common.
+
+```{r}
+# Convert 'House.Age' to categorical variable
+FIES$House.Age.Group <- cut(FIES$House.Age, breaks=c(0,10,30,100), labels=c("New","Middle","Old"))
+
+# Convert categorical variable into factor
+FIES$House.Age.Group <- factor(FIES$House.Age.Group)
+
+# Remove the 'House.Age' column
+FIES <- FIES %>% select(-House.Age)
+
+```
+
+```{r}
+# Convert 'Number.of.bedrooms' to categorical variable
+FIES$Bedroom.Category <- cut(FIES$Number.of.bedrooms, 
+                             breaks = c(0, 1, 3, 5, Inf), 
+                             labels = c("Small", "Medium", "Large", "Luxury"),
+                             right = TRUE)
+
+# Convert categorical variable into factor
+FIES$Bedroom.Category <- factor(FIES$Bedroom.Category)
+
+# Remove the 'Number.of.bedrooms' column
+FIES <- FIES %>% select(-Number.of.bedrooms)
+
+```
+
+Then we can use the heat map to check the correlation between numerical variables and dependent variable:
+```{r}
+#| label: fig-corr-num
+#| fig-cap: Heat map for numerical variables by 'Total.Number.of.Family.members' 
+
+# Select all numerical variables
+numeric_vars <- FIES[, sapply(FIES, is.numeric)]
+# Since our dependent variable is a count varaible, use Spearman method
+cor_matrix <- cor(numeric_vars, method = "spearman")
+# Plot the correlation heatmap
+ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white", "orange"), outline.color = "black", 
+           legend.title = "Correlation") +
+  labs(title = "Correlation Matrix for Numeric Variables") +
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+    axis.text.y = element_text(size = 9),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16)
+  )
+
+```
+
+Form @fig-corr-num, we can see income and expenditure are strongly correlated, reinforcing the expected relationship that higher-income households tend to spend more. Total.Number.ofFamily.members influences Total.Food.expenditure, but its impact on household income is weaker. Household.head.age has a minor effect on most other variables, with a slight negative correlation with family size. House.Floor.Area shows some correlation with income, but not significantly with household.head.age.
+
 
 # Formal Data Analysis
 
 ```{r}
-# Compute Correlation Matrix and Scatterplot Matrix
-numeric_vars <- select(FIES,where(is.numeric))
-cor_matrix <- cor(numeric_vars)
-print(cor_matrix)
-ggpairs(numeric_vars)
-```
-
-```{r}
 # Fit a Poisson regression model
 poisson_model <- glm(Total.Number.of.Family.members ~ 
-                       Total.Household.Income + 
-                       Total.Food.Expenditure + 
-                       Household.Head.Age + 
-                       House.Floor.Area +
-                       House.Age +
-                       Number.of.bedrooms +
+                       log(Total.Household.Income) +
+                       log(Total.Food.Expenditure) +
                        Household.Head.Sex +
+                       Household.Head.Age + 
                        Type.of.Household +
-                       Electricity, 
-                     family = poisson(link = "log"), 
+                       log(House.Floor.Area) +
+                       Electricity +
+                       House.Age.Group +
+                       Bedroom.Category, 
+                     family = poisson(link = "log"),
                      data = FIES)
 summary(poisson_model)
+
 ```
 
 ```{r}
 # Check the Relative Risk(RR)
 exp(coef(poisson_model)) 
 # For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+
 ```
 
 ```{r}
+#| label: fig-residual
 # plot the Pearson and deviance residuals against the linear predictor
 resp <- resid(poisson_model, type = "pearson")
 resd <- resid(poisson_model, type = "deviance")
@@ -271,5 +382,7 @@ p4 <- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resd
 
 grid.arrange(p1, p2, p3, p4, nrow = 2)
 ```
+From @fig-residual, we can see the Q-Q plot shows that the tails deviate from the straight line, indicating that the residual distribution may not be normal, suggesting the presence of heavy tails or a violation of model assumptions.  
+The residuals vs. predicted values plot exhibits a funnel-shaped pattern, indicating heteroscedasticity, where the variance of the residuals increases as the predicted values grow.
 
 # Conclusion
