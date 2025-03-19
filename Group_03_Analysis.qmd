@@ -31,10 +31,480 @@ library(moderndive)
 
 ```{r}
 Data_FIES <- read.csv("dataset03.csv")
+<<<<<<< Updated upstream
+=======
+# Tidy the data
+FIES <- Data_FIES %>%
+  # Place the dependent variable in the first column and delete the unique value
+  select(Total.Number.of.Family.members, everything(), -Region) %>%
+  # Convert categorical variables into factors
+  mutate(
+    Household.Head.Sex = as.factor(Household.Head.Sex),
+    Type.of.Household = as.factor(Type.of.Household),
+    Electricity = as.factor(Electricity)) %>%
+  # Remove Missing Values
+  drop_na()
+FIES_saved <- FIES
+
+>>>>>>> Stashed changes
 ```
 
 # Exploratory Data Analysis
 
+<<<<<<< Updated upstream
 # Formal Data Analysis
 
+=======
+```{r}
+str(FIES) # Check data structure 
+summary(FIES) # Get summary statistics of all variables  
+dim(FIES) # Check dataset dimensions (number of rows and columns)
+
+```
+
+## Numerical summaries and Data visualization
+
+Now we can take a look at the numerical summaries and data visualization of dependent variable shown in the following tables and plots:
+
+```{r}
+#| label: tbl-y
+#| tbl-cap: Summary statistics for 'Total.Number.of.Family.members'
+#| tbl-cap-location: top
+
+FIES |>
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'Sample_size' = n()
+  ) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  ) 
+
+```
+
+```{r}
+#| label: fig-y
+#| fig-cap: Histogram of 'Total.Number.of.Family.members'
+
+# Visualize dependent variable distribution
+ggplot(FIES, aes(x = Total.Number.of.Family.members)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(x = "Number of Family Members", y = "Frequency")
+
+```
+
+From @tbl-y,
+
+@fig-y shows that
+
+Then check the variance of the dependent variable and compare with the mean:
+
+```{r}
+var <- var(FIES$Total.Number.of.Family.members)
+mean <- mean(FIES$Total.Number.of.Family.members)
+var_ratio <- var/mean
+
+```
+
+var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
+
+Then we separate independent variables into categorical variables and numerical variables for analysis.
+
+(1) Categorical Variables
+
+```{r}
+#| label: tbl-y-sex
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Household.Head.Sex' 
+#| tbl-cap-location: top
+
+FIES |>
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'Sample_size' = n(),
+            .by = Household.Head.Sex) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  )
+
+```
+
+```{r}
+#| label: fig-y-sex
+#| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Household.Head.Sex'
+
+ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fill = Household.Head.Sex)) +
+  geom_boxplot() +
+  labs(x = "Household Head's Gender", y = "Family Size") 
+
+```
+
+From @tbl-y-sex,
+
+@fig-y-sex shows that
+
+```{r}
+#| label: tbl-y-household
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Type.of.Household' 
+#| tbl-cap-location: top
+
+FIES |>
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'Sample_size' = n(),
+            .by = Type.of.Household) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  )
+
+```
+
+```{r}
+#| label: fig-y-household
+#| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Type.of.Household'
+
+ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill = Type.of.Household)) +
+  geom_boxplot() +
+  labs(x = "Household Type", y = "Family Size") 
+
+```
+
+From @tbl-y-household,
+
+@fig-y-household shows that
+
+```{r}
+#| label: tbl-y-electricity
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Electricity' 
+#| tbl-cap-location: top
+
+FIES |>
+  summarize('Mean' = mean(Total.Number.of.Family.members),
+            'Median' = median(Total.Number.of.Family.members),
+            'St.Dev' = sd(Total.Number.of.Family.members),
+            'Min' = min(Total.Number.of.Family.members),
+            'Max' = max(Total.Number.of.Family.members),
+            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'Sample_size' = n(),
+            .by = Electricity) |>
+  gt() |>
+  fmt_number(decimals=2) |>
+  cols_label(
+    Mean = html("Mean"),
+    Median = html("Median"),
+    St.Dev = html("Std. Dev"),
+    Min = html("Minimum"),
+    Max = html("Maximum"),
+    IQR = html("Interquartile Range"),
+    Sample_size = html("Sample Size")
+  )
+
+```
+
+```{r}
+#| label: fig-y-electricity
+#| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Electricity'
+
+ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Electricity)) +
+  geom_boxplot() +
+  labs(x = "Electricity (0 = No, 1 = Yes)", y = "Family Size") 
+
+```
+
+From @tbl-y-electricity,
+
+@fig-y-electricity shows that
+
+(2) Numerical Variables
+
+```{r}
+#| label: fig-his-num
+#| fig-cap: Histograms for Numerical Variables
+
+p1 <- ggplot(FIES, aes(x = Total.Household.Income)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Household Income Distribution", x = "Household Income", y = "Count")
+p2 <- ggplot(FIES, aes(x = Total.Food.Expenditure)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Household Expenditure Distribution", x = "Household Expenditure", y = "Count")
+p3 <- ggplot(FIES, aes(x = Household.Head.Age)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Household Head Age Distribution", x = "Household Head Age", y = "Count")
+p4 <- ggplot(FIES, aes(x = House.Floor.Area)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "House Floor Area Distribution", x = "House Floor Area", y = "Count")
+p5 <- ggplot(FIES, aes(x = House.Age)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "House Age Distribution", x = "House Age", y = "Count")
+p6 <- ggplot(FIES, aes(x = Number.of.bedrooms)) +
+  geom_histogram(fill = "steelblue", color = "black", bins = 30) +
+  labs(title = "Number of bedrooms Distribution", x = "Number of bedrooms", y = "Count")
+(p1 | p2 | p3) / (p4 | p5 | p6)
+```
+
+From @fig-his-num,we can see the distributions of Household Income, Household Expenditure, and House Floor Area are right-skewed, so applying a log transformation would be beneficial when fitting a Poisson model. Household Head Age follows an approximately normal distribution, so no transformation is needed. House Age exhibits a bimodal distribution, suggesting that binning it into categorical groups would be appropriate. The Number of Bedrooms is a discrete variable and should also be converted into a categorical variable for analysis.
+
+```{r}
+#remove############################
+# Convert 'House.Age' to categorical variable
+FIES$House.Age.Group <- cut(FIES$House.Age, breaks=c(0,10,30,100), labels=c("New","Middle","Old"))
+
+# Convert categorical variable into factor
+FIES$House.Age.Group <- factor(FIES$House.Age.Group)
+
+# Remove the 'House.Age' column
+FIES <- FIES %>% select(-House.Age)
+
+```
+
+```{r}
+#################remove
+# Convert 'Number.of.bedrooms' to categorical variable
+FIES$Bedroom.Category <- cut(FIES$Number.of.bedrooms, 
+         breaks = c(-1, 1, 3, 5, Inf), 
+         labels = c("Small", "Medium", "Large", "Luxury"),right = TRUE)
+# Convert categorical variable into factor
+FIES$Bedroom.Category <- factor(FIES$Bedroom.Category)
+
+# Remove the 'Number.of.bedrooms' column
+FIES <- FIES %>% select(-Number.of.bedrooms)
+
+```
+
+Then we can use the heat map to check the correlation between numerical variables and dependent variable:
+
+```{r}
+#| label: fig-corr-num
+#| fig-cap: Heat map for numerical variables by 'Total.Number.of.Family.members' 
+
+# Select all numerical variables
+numeric_vars <- FIES[, sapply(FIES, is.numeric)]
+# Since our dependent variable is a count varaible, use Spearman method
+cor_matrix <- cor(numeric_vars, method = "spearman")
+# Plot the correlation heatmap
+ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+           colors = c("blue", "white", "orange"), outline.color = "black", 
+           legend.title = "Correlation") +
+  labs(title = "Correlation Matrix for Numeric Variables") +
+  theme(
+    axis.text.x = element_text(size = 9, angle = 45, vjust = 1, hjust = 1),
+    axis.text.y = element_text(size = 9),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16)
+  )
+
+```
+
+Form @fig-corr-num,
+
+# Formal Data Analysis
+
+由于因变量 Family_Size（家庭规模） 是典型的计数变量，且其均值与方差接近，因此选择泊松回归（Poisson Regression）进行建模。首先，基于 EDA 结果对部分变量进行对数变换，以改善线性关系并减少异方差问题。随后，将所有选定变量纳入模型，并采用 drop1(poisson_model, test = "F") 进行逐步回归，评估变量的显著性，逐步剔除不显著变量，以确保最终模型的稳健性和解释力。
+Since the dependent variable Family_Size is a typical count variable with a mean and variance that are approximately equal, Poisson regression was chosen for modeling. Based on the results of EDA, some variables were log-transformed to improve linear relationships and reduce heteroscedasticity. All selected variables were then included in the model, and stepwise regression using drop1(poisson_model, test = "F") was performed to assess variable significance, gradually eliminating insignificant variables to ensure the final model's robustness and explanatory power.
+```{r}
+# Fit a Poisson regression model
+FIES <- FIES_saved
+colnames(FIES) <- c("Family_Size", "Income", "Food_Exp", "Head_Sex", "Head_Age","Household_Type", "Floor_Area", "House_Age", "Bedrooms", "Electricity")
+poisson_model <- glm(Family_Size ~ 
+                       log(Income) +
+                       log(Food_Exp) +
+                       Head_Sex +
+                       Head_Age + 
+                       Household_Type +
+                       log(Floor_Area) +
+                       log(House_Age+0.1) +
+                       Bedrooms +
+                       Electricity, 
+                     family = poisson(link = "log"),
+                     data = FIES)
+#summary(poisson_model)
+drop1(poisson_model, test = "F")
+```
+
+对于 Floor_Area（居住面积），由于其本身是连续变量，已在 EDA 过程中进行了对数变换，以改善线性关系并减少异方差问题。但在泊松回归模型中，即使经过对数变换后仍然不显著，因此考虑将其剔除。对于 Bedrooms（卧室数量），其为整数型离散变量，且存在大量 0 值。考虑到可能存在类别效应，将其转换为分类变量可能更合适，以便更好地捕捉其对家庭规模的影响。
+For Floor_Area, since it is a continuous variable, a log transformation was applied during the EDA process to improve linearity and reduce heteroscedasticity. However, it remained insignificant in the Poisson regression model even after transformation, so it is considered for removal. As for Bedrooms, it is a discrete integer variable with a large number of zero values. Given the potential categorical effect, converting it into a categorical variable may be more appropriate to better capture its impact on family size.
+
+```{r}
+
+FIES$Bedroom.Category <- cut(FIES$Bedrooms, 
+                             breaks = c(-1, 1, 3, Inf), 
+                             labels = c("Small", "Medium", "Large"),
+                             right = TRUE)
+FIES$Bedroom.Category <- factor(FIES$Bedroom.Category)
+model_cat <- lm(Family_Size ~ Bedroom.Category, data = FIES)
+summary(model_cat)
+catpoisson_model <- glm(Family_Size ~ 
+                       log(Income) +
+                       log(Food_Exp) +
+                       Head_Sex +
+                       Head_Age + 
+                       Household_Type +
+                       log(House_Age+1) +
+                       Bedroom.Category +
+                       Electricity, 
+                     family = poisson(link = "log"),
+                     data = FIES)
+#summary(catpoisson_model)
+drop1(catpoisson_model, test = "F")
+```
+对 Bedrooms 进行分类后重新拟合模型，结果显示其仍然不显著，因此最终将其剔除。
+After converting Bedrooms into a categorical variable and refitting the model, it remained insignificant, so it was ultimately removed.
+
+```{r}
+poisson_model2 <- glm(Family_Size ~ 
+                          log(Income) +
+                          log(Food_Exp) +
+                          Head_Sex +
+                          Head_Age + 
+                          Household_Type +
+                          log(House_Age+1) +
+                          Electricity, 
+                        family = poisson(link = "log"),
+                        data = FIES)
+summary(poisson_model2)
+```
+虽然 Household_Type(Two or More Nonrelated Persons/Members) 的分类在统计上不显著，但考虑到原数据的分类依据，该类别仍具有实际意义。因此，在模型中基于理论支持将其保留，以便在模型解释时仍然能够考虑其影响。
+Although the classification of Household_Type is not significant statistically, it is retained based on the theoretical justification from the original data classification. This ensures that its impact is still considered during model interpretation.
+
+```{r}
+resp<-resid(poisson_model2,type= "pearson")
+resd<-resid(poisson_model2,type= "deviance")
+p1 <- ggplot(data.frame(sample = resp), aes(sample = sample)) +
+  geom_point(stat = "qq", color = "#7fc97f") +
+  ylab("Pearson Residuals")
+p2 <- ggplot(data.frame(sample = resd), aes(sample = sample)) +
+  geom_point(stat = "qq", color = "#7fc97f") +
+  ylab("Deviance Residuals")
+p3 <- ggplot(poisson_model2, aes(x = log(fitted(poisson_model2)), y = residuals(poisson_model2, type = "pearson"))) +
+  geom_jitter(color = "#f46d43",width = 0.5, height = 0.5) +
+  geom_abline(slope = 0, intercept = 0, col = "#a6d96a", linewidth = 1) +
+  ylab("Pearson Residuals") + xlab(expression(hat(mu)))
+grid.arrange(arrangeGrob(p1, p2, ncol = 1), p3, ncol = 2)
+```
+
+通过绘制 Pearson 和 Deviance 的 QQ 图，我们发现数据符合正态假设。为了进一步验证 Deviance 是否存在明显的过度离散，我比较了原始 泊松模型 和 拟泊松模型 在处理过度离散问题上的效果。通过对比这两个模型的标准化 Pearson 残差，我发现原始泊松模型的效果更好，说明数据没有显著的过度离散现象。因此，未对参数的标准误差进行处理，因为过度离散问题不明显。
+By plotting the QQ plots of Pearson and Deviance, we found that the data conform to the normality assumption. To further assess whether there is significant overdispersion in the Deviance distribution, I compared the performance of the original Poisson model and the Quasi-Poisson model in handling overdispersion. By comparing the standardized Pearson residuals of both models, I found that the original Poisson model performed better, indicating no significant overdispersion. Therefore, no adjustment was made to the standard errors of the parameters, as overdispersion was not evident.
+
+```{r}
+X2 <- sum(resid(poisson_model2, type = "pearson")^2)
+dp <- X2 / poisson_model2$df.res
+summary(poisson_model2, dispersion = dp)
+pred <- predict(poisson_model2, type = "response")
+stand.resid <- rstandard(model = poisson_model2, type = "pearson") # Standardised Pearson residuals
+par(mfrow=c(1,2))
+plot(x = pred, y = stand.resid, xlab = "Predicted count", ylab = "Standardised Pearson residuals",
+     main = "Regular likelihood", ylim = c(-5,5))
+abline(h = c(-3,-2, 0, 2, 3), lty = "dotted", col = "red")
+poisson_model3 <- glm(Family_Size ~ 
+                        log(Income) +
+                        log(Food_Exp) +
+                        Head_Sex +
+                        Head_Age + 
+                        Household_Type +
+                        log(House_Age+1) +
+                        Electricity, 
+                      family = quasipoisson(link = "log"),
+                      data = FIES)  # Quasi-Poisson model
+pred <- predict(poisson_model3, type = "response")
+stand.resid <- rstandard(model = poisson_model3, type = "pearson") # Standardised Pearson residuals
+plot(x = pred, y = stand.resid, xlab = "Predicted count", ylab = "Standardised Pearson residuals",
+     main = "Quasi-likelihood", ylim = c(-5,5))
+abline(h = c(-3,-2, 0, 2, 3), lty = "dotted", col = "red")
+```
+
+
+根据模型比较和 LRT 检验 结果，考虑到 EDA 中热力图显示的较高相关性，决定引入 Income 和 Food_Exp 的交互项。经过比较原始模型和加入交互项后的模型，发现引入交互项后，模型的 Deviance 减少了 47.118，表明交互项显著改进了模型的拟合效果。因此，可以得出结论，引入交互项有效地改善了模型的解释力和拟合度。
+Based on the model comparison and LRT test results, and considering the high correlation observed in the EDA heatmap, an interaction term between Income and Food_Exp was introduced. After comparing the original model with the model including the interaction term, it was found that the Deviance decreased by 47.118 after adding the interaction term, indicating that the inclusion of the interaction term significantly improved the model's fit. Therefore, the conclusion can be made that introducing the interaction term effectively enhanced the model's explanatory power and fit.
+```{r}
+model1 <- glm(Family_Size ~ log(Income) * log(Food_Exp) + 
+Head_Sex + Head_Age + Household_Type +log(House_Age + 1) + Electricity, family = poisson(link = "log"),data = FIES)
+anova(poisson_model2, model1, test = "LRT")
+```
+
+>>>>>>> Stashed changes
 # Conclusion
+```{r}
+# Check the Relative Risk(RR)
+exp(coef(model1)) 
+# For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+```
+收入（Income）对家庭人口数的影响：
+当收入增加 1% 时，平均家庭人口数大约增加 3.79 倍。这表明收入的增加与家庭人口数呈正相关，收入越高，家庭成员数可能更多。
+
+食品支出（Food_Exp）对家庭人口数的影响：
+当食品支出增加 1% 时，平均家庭人口数大约增加 11.25 倍。这意味着食品支出的增加可能与家庭成员数增加密切相关。
+
+房龄（House_Age）对家庭人口数的影响：
+当房龄增加 1% 时，平均家庭人口数大约减少 5.39%。这表明较旧的房屋可能与较小的家庭规模相关，可能是由于居住条件或其他因素。
+
+收入与食品支出之间的交互效应：
+当收入和食品支出同时增加 1% 时，平均家庭人口数会减少约 13.21%。这可能表明，尽管这两个变量本身有正向影响，但它们的交互效应反映出某种程度的负向关联，可能意味着高收入家庭的食品支出增多时反而不增加家庭规模。
+
+户主性别对家庭人口数的影响：
+男性户主的家庭相较于女性户主，平均家庭人口数目要大约多 15%。这表明男性户主的家庭可能比女性户主的家庭成员更多。
+
+户主年龄对家庭人口数的影响：
+户主年龄每增加 1 岁时，平均家庭人口数减少约 0.4%。这可能表明年龄较大的户主可能拥有较小的家庭规模。
+
+家庭类型对家庭人口数的影响：
+如果家庭类型为单亲家庭，相对于其他类型的家庭，平均家庭人口数减少约 25%。单亲家庭的家庭规模通常较小。
+Based on the results of the model, the following key conclusions can be summarized:
+
+Income's Impact on Family Size:
+When income increases by 1%, the average family size increases by approximately 3.79 times. This indicates a positive correlation between income and family size, suggesting that higher income may be associated with larger families.
+
+Food Expenditure's Impact on Family Size:
+When food expenditure increases by 1%, the average family size increases by approximately 11.25 times. This suggests that higher food spending is closely related to an increase in family size.
+
+House Age's Impact on Family Size:
+When house age increases by 1%, the average family size decreases by approximately 5.39%. This implies that older houses may be associated with smaller family sizes, possibly due to living conditions or other factors.
+
+Interaction Between Income and Food Expenditure:
+When both income and food expenditure increase by 1%, the average family size decreases by approximately 13.21%. This suggests that while both variables have a positive individual effect, their interaction shows a negative association, possibly indicating that higher income combined with higher food expenditure may not lead to a larger family size.
+
+Head Sex's Impact on Family Size:
+Families with male heads tend to have approximately 15% more members than those with female heads. This indicates that families with male heads may be larger than those with female heads.
+
+Head Age's Impact on Family Size:
+For each additional year in the head's age, the average family size decreases by approximately 0.4%. This suggests that older heads of households may have smaller families.
+
+Household Type's Impact on Family Size:
+If the household type is a single-parent family, the average family size is about 25% smaller compared to other household types. Single-parent families generally have smaller family sizes.
+
+In summary, these results show that family size is closely related to various factors, particularly income, food expenditure, head sex, and household type. Changes in family size are influenced not only by individual variables but also by the interactions between them.
+
