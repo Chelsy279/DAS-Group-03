@@ -94,7 +94,7 @@ The dependent variable and independent variables are shown as below:
 
 # Exploratory Data Analysis
 
-Then we check the data structure and get summary statistics of all variables:
+Then we can check the data structure and get summary statistics of all variables:
 
 ```{r}
 #| echo: true
