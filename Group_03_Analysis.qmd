@@ -308,7 +308,7 @@ However it only have a sample size of 9 which weakens the reliability of this ca
 
 ```{r, tab.cap="H"}
 #| label: tbl-y-electricity
-#| tbl-cap: Summary statistics on Family.members by Electricity
+#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Electricity'
 #| tbl-cap-location: top
 
 FIES |>
