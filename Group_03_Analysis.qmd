@@ -42,7 +42,7 @@ library(broom)
 In Philippine, **FIES**(Family Income and Expenditure Survey), which is undertaken every three years, is aimed at providing data on family income and expenditure.
 This dataset, comes from the FIES recorded in the Philippines, is analysed in this report.
 
-In particular, this report presents numerical and graphical summaries of FIES and fits a **Generalized Linear Model(GLM)** to analyze which household related variables influence the number of people living in a household.
+In particular, this report presents numerical and graphical summaries of FIES and fits a **Generalized Linear Model(GLM)** with **Poisson Regression** to analyze which household related variables influence the number of people living in a household.
 
 # Research Question
 
@@ -69,10 +69,6 @@ FIES <- Data_FIES %>%
   drop_na()
 FIES_saved <- FIES # Used for model fitting
 ```
-
-We moved the implicit variable to the first row and deleted the region which has no difference in the data.
-'Household.Head.Sex', 'Type.of.Household', and 'Electricity' were converted to factors to ensure that the statistical model correctly handled the categorical variables.
-Also we removed missing values to ensure data integrity.
 
 The dependent variable and independent variables are shown as below:
 
@@ -160,7 +156,7 @@ The mean value (4.68) and median (4.00) are very close, suggesting a roughly sym
 However, the median is slightly lower than the mean hints at a mild right skew in the data.
 The standard deviation (2.30) indicates moderate variability around the mean.
 
-@fig-y shows a strong right-skewed distribution of frequency data.
+@fig-y shows a strongly right-skewed distribution of frequency data.
 The highest bar (around 300) is concentrated on the left side of the x-axis, indicating that most values are in the lower ranges.
 The frequency sharply decreased toward the right, with the far-right bars approaching 0, shows that rare occurrences in higher-value intervals.
 
@@ -175,7 +171,7 @@ cat("var =",var,"\n")
 cat("var_ratio =",var_ratio,"\n")
 ```
 
-var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
+var/mean=5.28/4.68=1.13 indicates that there is no overdispersion problem, so Poisson regression model may be appropriate.
 
 Then we separate independent variables into categorical variables and numerical variables for analysis.
 
@@ -229,7 +225,7 @@ ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fil
 
 ```
 
-@tbl-y-sex compares family size statistics between female-headed and male-headed households.
+@tbl-y-sex compares the 'Total.Number.of.Family.members' between female-headed and male-headed households.
 Female-headed households exhibit smaller family size, with a mean of 3.83 and a median of 3.00, while male-headed households show significantly larger families (mean = 4.91, median = 5.00).
 Despite similar variability in both groups (standard deviations of nearly 2.3), the male-headed households display a broader range.
 Notably, the dataset is heavily skewed toward male-headed households (1487 samples vs. 400 female samples), which could influence the result.
@@ -304,7 +300,7 @@ Households with two or more unrelated members report the highest average (mean =
 Single families shows a lower median (4) and tighter clustering of data.
 It reflects a more consistent household size.
 Households with two or more unrelated members have a median of 6 members.
-However it only have a sample size of 9 which weakens the reliability of this category.
+However it only has a sample size of 9 which weakens the reliability of this category.
 
 ```{r, tab.cap="H"}
 #| label: tbl-y-electricity
@@ -449,10 +445,10 @@ ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 3,
   )
 ```
 
-Form @fig-corr-num, we can see 'Total.Household.Income' and 'Total.Food.Expenditure' are strongly correlated, reinforcing the expected relationship that higher-income households tend to spend more.
-'Total.Number.of.Family.members' influences 'Total.Food.expenditure', but its impact on 'Total.Household.Income' is weaker.
-'Household.head.age' has a minor effect on most other variables, with a slight negative correlation with family size.
-'House.Floor.Area' shows some correlation with income, but not significantly with 'Household.head.age'.
+From @fig-corr-num, we can see there is a strong correlation between 'Total.Household.Income' and 'Total.Food.Expenditure'.
+We will address this issue in the subsequent modeling process.
+'Total.Number.of.Family.Members' shows a strong correlation with 'Total.Food.Expenditure', while 'Household.Head.Age' and 'House.Age' have a slight negative correlation with 'Total.Number.of.Family.Members'.
+There is also some correlation between 'Total.Household.Income' and 'Number.of.bedrooms', 'Total.Household.Income' and 'House.Floor.Area', 'Total.Food.Expenditure' and 'Number.of.bedrooms', and 'House.Floor.Area' and 'Number.of.bedrooms'.
 
 # Formal Data Analysis
 
@@ -513,10 +509,10 @@ summary(poisson_model1)
 drop1(poisson_model1, test = "F")
 ```
 
-For Floor_Area, since it is a continuous variable, a log transformation was applied during the EDA process to improve linearity and reduce heteroscedasticity.
+For 'Floor_Area', since it is a continuous variable, a log transformation was applied during the EDA process to improve linearity and reduce heteroscedasticity.
 However, it remained insignificant in the Poisson regression model even after transformation, so it is considered for removal.
-As for Bedrooms, it is a discrete integer variable with a large number of zero values.
-Given the potential categorical effect, converting it into a categorical variable may be more appropriate to better capture its impact on family size.
+As for 'Bedrooms', it is a discrete integer variable with a large number of zero values.
+Given the potential categorical effect, converting it into a categorical variable may be more appropriate to better capture its impact on 'Family_Size'.
 
 ```{r}
 #| echo: true
@@ -527,7 +523,7 @@ FIES$Bedroom.Category <- cut(FIES$Bedrooms,
 FIES$Bedroom.Category <- factor(FIES$Bedroom.Category)
 ```
 
-Fit a linear regression model with 'Bedroom.Category' and observe that the results show the category has a certain significance.
+Fit a linear regression model with 'Bedroom.Category' and observe that the results show the category has a certain significance:
 
 ```{r}
 #| echo: true
@@ -541,7 +537,7 @@ library(knitr)
 kable(model_summary, caption = "Model Coefficients and Significance", format = "latex")
 ```
 
-Then we can Fit a poisson regression model with 'Bedroom.Category' the same as above:
+Then we can fit a Poisson regression model with 'Bedroom.Category' the same as above:
 
 ```{r}
 #| echo: true
@@ -567,7 +563,7 @@ summary(poisson_model_cat)
 drop1(poisson_model_cat, test = "F")
 ```
 
-After converting Bedrooms into a categorical variable and refitting the model, it remained insignificant, so it was ultimately removed.
+After converting 'Bedrooms' into a categorical variable and refitting the model, it remained insignificant, so it was ultimately removed.
 
 Fit the second Poisson regression model:
 
@@ -594,7 +590,7 @@ poisson_model2 <- glm(Family_Size ~
 summary(poisson_model2)
 ```
 
-Although the classification of Household_Type is not significant statistically, it is retained based on the theoretical justification from the original data classification.
+Although the classification of 'Household_Type' is not significant statistically, it is retained based on the theoretical justification from the original data classification.
 This ensures that its impact is still considered during model interpretation.
 
 ```{r, fig.pos="H"}
@@ -653,7 +649,7 @@ plot(x = pred, y = stand.resid, xlab = "Predicted count", ylab = "Standardised P
 abline(h = c(-3,-2, 0, 2, 3), lty = "dotted", col = "red")
 ```
 
-Based on the model comparison and LRT test results, and considering the high correlation observed in the EDA heatmap, an interaction term between Income and Food_Exp was introduced.
+Based on the model comparison and LRT test results, and considering the high correlation observed in the EDA heatmap, an interaction term between 'Income' and 'Food_Exp' was introduced.
 After comparing the original model with the model including the interaction term, it was found that the Deviance decreased by 47.118 after adding the interaction term, indicating that the inclusion of the interaction term significantly improved the model's fit.
 Therefore, the conclusion can be made that introducing the interaction term effectively enhanced the model's explanatory power and fit the final Poisson regression model:
 

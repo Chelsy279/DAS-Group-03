@@ -211,7 +211,7 @@ Based on GLM}
 
 \begin{document}
 \maketitle
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[enhanced, borderline west={3pt}{0pt}{shadecolor}, interior hidden, boxrule=0pt, frame hidden, sharp corners, breakable]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, interior hidden, sharp corners, frame hidden, enhanced, boxrule=0pt, breakable]}{\end{tcolorbox}}\fi
 
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
@@ -222,9 +222,9 @@ family income and expenditure. This dataset, comes from the FIES
 recorded in the Philippines, is analysed in this report.
 
 In particular, this report presents numerical and graphical summaries of
-FIES and fits a \textbf{Generalized Linear Model(GLM)} to analyze which
-household related variables influence the number of people living in a
-household.
+FIES and fits a \textbf{Generalized Linear Model(GLM)} with
+\textbf{Poisson Regression} to analyze which household related variables
+influence the number of people living in a household.
 
 \hypertarget{research-question}{%
 \section{Research Question}\label{research-question}}
@@ -255,12 +255,6 @@ First read the data and tidy the data using tidyverse:
 \NormalTok{FIES\_saved }\OtherTok{\textless{}{-}}\NormalTok{ FIES }\CommentTok{\# Used for model fitting}
 \end{Highlighting}
 \end{Shaded}
-
-We moved the implicit variable to the first row and deleted the region
-which has no difference in the data. `Household.Head.Sex',
-`Type.of.Household', and `Electricity' were converted to factors to
-ensure that the statistical model correctly handled the categorical
-variables. Also we removed missing values to ensure data integrity.
 
 The dependent variable and independent variables are shown as below:
 
@@ -410,11 +404,12 @@ symmetric distribution. However, the median is slightly lower than the
 mean hints at a mild right skew in the data. The standard deviation
 (2.30) indicates moderate variability around the mean.
 
-Figure~\ref{fig-y} shows a strong right-skewed distribution of frequency
-data. The highest bar (around 300) is concentrated on the left side of
-the x-axis, indicating that most values are in the lower ranges. The
-frequency sharply decreased toward the right, with the far-right bars
-approaching 0, shows that rare occurrences in higher-value intervals.
+Figure~\ref{fig-y} shows a strongly right-skewed distribution of
+frequency data. The highest bar (around 300) is concentrated on the left
+side of the x-axis, indicating that most values are in the lower ranges.
+The frequency sharply decreased toward the right, with the far-right
+bars approaching 0, shows that rare occurrences in higher-value
+intervals.
 
 Then check the variance of the dependent variable and compare with the
 mean:
@@ -431,7 +426,7 @@ var = 5.28232
 var_ratio = 1.129361 
 \end{verbatim}
 
-var/mean=5.28/4.68=1.13≈1 indicates that there is no overdispersion
+var/mean=5.28/4.68=1.13 indicates that there is no overdispersion
 problem, so Poisson regression model may be appropriate.
 
 Then we separate independent variables into categorical variables and
@@ -473,11 +468,11 @@ Male & 4.91 & 5.00 & 2.23 & 1.00 & 16.00 & 3.00 & 1,487.00 \\
 
 \end{figure}
 
-Table~\ref{tbl-y-sex} compares family size statistics between
-female-headed and male-headed households. Female-headed households
-exhibit smaller family size, with a mean of 3.83 and a median of 3.00,
-while male-headed households show significantly larger families (mean =
-4.91, median = 5.00). Despite similar variability in both groups
+Table~\ref{tbl-y-sex} compares the `Total.Number.of.Family.members'
+between female-headed and male-headed households. Female-headed
+households exhibit smaller family size, with a mean of 3.83 and a median
+of 3.00, while male-headed households show significantly larger families
+(mean = 4.91, median = 5.00). Despite similar variability in both groups
 (standard deviations of nearly 2.3), the male-headed households display
 a broader range. Notably, the dataset is heavily skewed toward
 male-headed households (1487 samples vs.~400 female samples), which
@@ -537,7 +532,7 @@ highest median family size (5) with a broader range which is up to 16
 members, indicating potential outliers. Single families shows a lower
 median (4) and tighter clustering of data. It reflects a more consistent
 household size. Households with two or more unrelated members have a
-median of 6 members. However it only have a sample size of 9 which
+median of 6 members. However it only has a sample size of 9 which
 weakens the reliability of this category.
 
 \hypertarget{tbl-y-electricity}{}
@@ -652,15 +647,17 @@ variables and dependent variable:
 
 \end{figure}
 
-Form Figure~\ref{fig-corr-num}, we can see `Total.Household.Income' and
-`Total.Food.Expenditure' are strongly correlated, reinforcing the
-expected relationship that higher-income households tend to spend more.
-`Total.Number.of.Family.members' influences `Total.Food.expenditure',
-but its impact on `Total.Household.Income' is weaker.
-`Household.head.age' has a minor effect on most other variables, with a
-slight negative correlation with family size. `House.Floor.Area' shows
-some correlation with income, but not significantly with
-`Household.head.age'.
+From Figure~\ref{fig-corr-num}, we can see there is a strong correlation
+between `Total.Household.Income' and `Total.Food.Expenditure'. We will
+address this issue in the subsequent modeling process.
+`Total.Number.of.Family.Members' shows a strong correlation with
+`Total.Food.Expenditure', while `Household.Head.Age' and `House.Age'
+have a slight negative correlation with
+`Total.Number.of.Family.Members'. There is also some correlation between
+`Total.Household.Income' and `Number.of.bedrooms',
+`Total.Household.Income' and `House.Floor.Area',
+`Total.Food.Expenditure' and `Number.of.bedrooms', and
+`House.Floor.Area' and `Number.of.bedrooms'.
 
 \hypertarget{formal-data-analysis}{%
 \section{Formal Data Analysis}\label{formal-data-analysis}}
@@ -756,14 +753,14 @@ Electricity           1   1229.0 7458.7  16.1106 6.210e-05 ***
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 \end{verbatim}
 
-For Floor\_Area, since it is a continuous variable, a log transformation
-was applied during the EDA process to improve linearity and reduce
-heteroscedasticity. However, it remained insignificant in the Poisson
-regression model even after transformation, so it is considered for
-removal. As for Bedrooms, it is a discrete integer variable with a large
-number of zero values. Given the potential categorical effect,
+For `Floor\_Area', since it is a continuous variable, a log
+transformation was applied during the EDA process to improve linearity
+and reduce heteroscedasticity. However, it remained insignificant in the
+Poisson regression model even after transformation, so it is considered
+for removal. As for `Bedrooms', it is a discrete integer variable with a
+large number of zero values. Given the potential categorical effect,
 converting it into a categorical variable may be more appropriate to
-better capture its impact on family size.
+better capture its impact on `Family\_Size'.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -776,7 +773,7 @@ better capture its impact on family size.
 \end{Shaded}
 
 Fit a linear regression model with `Bedroom.Category' and observe that
-the results show the category has a certain significance.
+the results show the category has a certain significance:
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -809,7 +806,7 @@ Bedroom.CategoryLarge & 0.6246625 & 0.2100237 & 2.974248 & 0.0029744\\
 \end{tabular}
 \end{table}
 
-Then we can Fit a poisson regression model with `Bedroom.Category' the
+Then we can fit a Poisson regression model with `Bedroom.Category' the
 same as above:
 
 \begin{Shaded}
@@ -849,8 +846,8 @@ Electricity         1   1227.7 7457.4  17.9213 2.414e-05 ***
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 \end{verbatim}
 
-After converting Bedrooms into a categorical variable and refitting the
-model, it remained insignificant, so it was ultimately removed.
+After converting `Bedrooms' into a categorical variable and refitting
+the model, it remained insignificant, so it was ultimately removed.
 
 Fit the second Poisson regression model:
 
@@ -873,7 +870,7 @@ y_{FS} = \beta_0 + \beta_1 \log[f_{In}(x)] + \beta_2 \log[f_{FE}(x)] + \beta_3 [
 \end{Highlighting}
 \end{Shaded}
 
-Although the classification of Household\_Type is not significant
+Although the classification of `Household\_Type' is not significant
 statistically, it is retained based on the theoretical justification
 from the original data classification. This ensures that its impact is
 still considered during model interpretation.
@@ -951,7 +948,7 @@ Number of Fisher Scoring iterations: 4
 
 Based on the model comparison and LRT test results, and considering the
 high correlation observed in the EDA heatmap, an interaction term
-between Income and Food\_Exp was introduced. After comparing the
+between `Income' and `Food\_Exp' was introduced. After comparing the
 original model with the model including the interaction term, it was
 found that the Deviance decreased by 47.118 after adding the interaction
 term, indicating that the inclusion of the interaction term
