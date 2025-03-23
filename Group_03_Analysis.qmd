@@ -2,22 +2,25 @@
 title: "Analysis of Factors Influencing Philippine Family Population Based on GLM"
 author: "Group_03"
 format: 
-  html:
-    embed-resources: true
-    code-tools: true
-  pdf: 
+  pdf:
+    documentclass: article
+    keep-tex: true
     include-in-header: 
       text: |
         \usepackage{booktabs}
         \usepackage{float}
         \floatplacement{table}{H}
-editor_options: 
-  chunk_output_type: console
+  html:
+    embed-resources: true
+    code-tools: true
 execute:
   echo: false
   eval: true
   warning: false
   message: false
+editor: 
+  markdown: 
+    wrap: sentence
 ---
 
 ```{r}
@@ -30,11 +33,14 @@ library(patchwork)
 library(gridExtra)
 library(moderndive)
 library(ggcorrplot)
+library(kableExtra)
+library(broom)
 ```
 
 # Introduction
 
-In Philippine, **FIES**(Family Income and Expenditure Survey), which is undertaken every three years, is aimed at providing data on family income and expenditure. This dataset, comes from the FIES recorded in the Philippines, is analysed in this report.
+In Philippine, **FIES**(Family Income and Expenditure Survey), which is undertaken every three years, is aimed at providing data on family income and expenditure.
+This dataset, comes from the FIES recorded in the Philippines, is analysed in this report.
 
 In particular, this report presents numerical and graphical summaries of FIES and fits a **Generalized Linear Model(GLM)** to analyze which household related variables influence the number of people living in a household.
 
@@ -64,7 +70,9 @@ FIES <- Data_FIES %>%
 FIES_saved <- FIES # Used for model fitting
 ```
 
-We moved the implicit variable to the first row and deleted the region which has no difference in the data. 'Household.Head.Sex', 'Type.of.Household', and 'Electricity' were converted to factors to ensure that the statistical model correctly handled the categorical variables. Also we removed missing values to ensure data integrity.
+We moved the implicit variable to the first row and deleted the region which has no difference in the data.
+'Household.Head.Sex', 'Type.of.Household', and 'Electricity' were converted to factors to ensure that the statistical model correctly handled the categorical variables.
+Also we removed missing values to ensure data integrity.
 
 The dependent variable and independent variables are shown as below:
 
@@ -90,7 +98,8 @@ The dependent variable and independent variables are shown as below:
 
 -   **Number.of.bedrooms**: Number of bedrooms in the house
 
--   **Electricity**: Does the house have electricity? (1=Yes, 0=No)
+-   **Electricity**: Does the house have electricity?
+    (1=Yes, 0=No)
 
 # Exploratory Data Analysis
 
@@ -146,9 +155,14 @@ ggplot(FIES, aes(x = Total.Number.of.Family.members)) +
 
 ```
 
-From @tbl-y, we can see our dataset includes 1887 samples, which is a sufficiently large sample size to ensure reliability. The mean value (4.68) and median (4.00) are very close, suggesting a roughly symmetric distribution. However, the median is slightly lower than the mean hints at a mild right skew in the data. The standard deviation (2.30) indicates moderate variability around the mean.
+From @tbl-y, we can see our dataset includes 1887 samples, which is a sufficiently large sample size to ensure reliability.
+The mean value (4.68) and median (4.00) are very close, suggesting a roughly symmetric distribution.
+However, the median is slightly lower than the mean hints at a mild right skew in the data.
+The standard deviation (2.30) indicates moderate variability around the mean.
 
-@fig-y shows a strong right-skewed distribution of frequency data. The highest bar (around 300) is concentrated on the left side of the x-axis, indicating that most values are in the lower ranges. The frequency sharply decreased toward the right, with the far-right bars approaching 0, shows that rare occurrences in higher-value intervals.
+@fig-y shows a strong right-skewed distribution of frequency data.
+The highest bar (around 300) is concentrated on the left side of the x-axis, indicating that most values are in the lower ranges.
+The frequency sharply decreased toward the right, with the far-right bars approaching 0, shows that rare occurrences in higher-value intervals.
 
 Then check the variance of the dependent variable and compare with the mean:
 
@@ -178,21 +192,30 @@ FIES |>
             'St.Dev' = sd(Total.Number.of.Family.members),
             'Min' = min(Total.Number.of.Family.members),
             'Max' = max(Total.Number.of.Family.members),
-            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'IQR' = quantile(Total.Number.of.Family.members, 0.75) - quantile(Total.Number.of.Family.members, 0.25),
             'Sample_size' = n(),
             .by = Household.Head.Sex) |>
   gt() |>
-  fmt_number(decimals=2) |>
+  fmt_number(decimals = 2) |>
   cols_label(
     Mean = html("Mean"),
     Median = html("Median"),
     St.Dev = html("Std. Dev"),
-    Min = html("Minimum"),
-    Max = html("Maximum"),
-    IQR = html("Interquartile Range"),
-    Sample_size = html("Sample Size")
+    Min = html("Min"),
+    Max = html("Max"),
+    IQR = html("IQR"),
+    Sample_size = html("Sample")
+  ) |>
+  tab_spanner(
+    label = "Family Size Summary",
+    columns = c("Mean", "Median", "St.Dev", "Min", "Max", "IQR", "Sample_size")
+  ) |>
+  tab_options(
+    table.width = pct(90),  # Slightly wider table
+    table.font.size = 12,   # Adjust font size
+    table.border.top.width = px(2),   # Adjust border width for top border
+    table.border.bottom.width = px(2) # Adjust bottom border width
   )
-
 ```
 
 ```{r, fig.pos="H"}
@@ -206,9 +229,15 @@ ggplot(FIES, aes(x = Household.Head.Sex, y = Total.Number.of.Family.members, fil
 
 ```
 
-@tbl-y-sex compares family size statistics between female-headed and male-headed households. Female-headed households exhibit smaller family size, with a mean of 3.83 and a median of 3.00, while male-headed households show significantly larger families (mean = 4.91, median = 5.00). Despite similar variability in both groups (standard deviations of nearly 2.3), the male-headed households display a broader range. Notably, the dataset is heavily skewed toward male-headed households (1487 samples vs. 400 female samples), which could influence the result. Both groups share identical interquartile ranges (IQR = 3.00), suggesting comparable central clustering of data.
+@tbl-y-sex compares family size statistics between female-headed and male-headed households.
+Female-headed households exhibit smaller family size, with a mean of 3.83 and a median of 3.00, while male-headed households show significantly larger families (mean = 4.91, median = 5.00).
+Despite similar variability in both groups (standard deviations of nearly 2.3), the male-headed households display a broader range.
+Notably, the dataset is heavily skewed toward male-headed households (1487 samples vs. 400 female samples), which could influence the result.
+Both groups share identical interquartile ranges (IQR = 3.00), suggesting comparable central clustering of data.
 
-@fig-y-sex shows that male-headed households exhibit a higher median family size of 5 members, compared to female-headed households with a median of 4 members. Both groups shows moderate variability in their distribution, but male-headed families display a wider range, with extreme outliers reaching up to 16 members which higher than the maximum of 12 members observed in female-headed households. This visualizes the tendency for male-led families to hold a larger household size.
+@fig-y-sex shows that male-headed households exhibit a higher median family size of 5 members, compared to female-headed households with a median of 4 members.
+Both groups shows moderate variability in their distribution, but male-headed families display a wider range, with extreme outliers reaching up to 16 members which higher than the maximum of 15 members observed in female-headed households.
+This visualizes the tendency for male-led families to hold a larger household size.
 
 ```{r, tab.cap="H"}
 #| label: tbl-y-household
@@ -221,40 +250,65 @@ FIES |>
             'St.Dev' = sd(Total.Number.of.Family.members),
             'Min' = min(Total.Number.of.Family.members),
             'Max' = max(Total.Number.of.Family.members),
-            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'IQR' = quantile(Total.Number.of.Family.members, 0.75) - quantile(Total.Number.of.Family.members, 0.25),
             'Sample_size' = n(),
             .by = Type.of.Household) |>
   gt() |>
-  fmt_number(decimals=2) |>
+  fmt_number(decimals = 2) |>
   cols_label(
     Mean = html("Mean"),
     Median = html("Median"),
     St.Dev = html("Std. Dev"),
-    Min = html("Minimum"),
-    Max = html("Maximum"),
-    IQR = html("Interquartile Range"),
+    Min = html("Min"),
+    Max = html("Max"),
+    IQR = html("IQR"),
     Sample_size = html("Sample Size")
+  ) |>
+  tab_spanner(
+    label = "Household Summary",
+    columns = c("Mean", "Median", "St.Dev", "Min", "Max", "IQR", "Sample_size")
+  ) |>
+  tab_options(
+    table.width = pct(90),  # Slightly wider table
+    table.font.size = 12,   # Adjust font size
+    table.border.top.width = px(2),   # Adjust border width for top border
+    table.border.bottom.width = px(2) # Adjust bottom border width
   )
-
 ```
 
 ```{r, fig.pos="H"}
 #| label: fig-y-household
 #| fig-cap: Boxplot of 'Total.Number.of.Family.members' by 'Type.of.Household'
 
+# Renaming levels of Type.of.Household
+FIES$Type.of.Household <- recode(FIES$Type.of.Household, 
+                                "Extended Family" = "Extended",
+                                 "Single Family" = "Single", 
+          "Two or More Nonrelated Persons/Members" = "More")
+
 ggplot(FIES, aes(x = Type.of.Household, y = Total.Number.of.Family.members, fill = Type.of.Household)) +
   geom_boxplot() +
   scale_fill_manual(values = c("gold","tomato","steelblue")) + 
-  labs(x = "Household Type", y = "Family Size") 
+  labs(x = "Household Type", y = "Family Size") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        plot.title = element_text(size = 10), 
+        axis.title = element_text(size = 10))
 ```
 
-@tbl-y-household summarizes family size statistics across three household types. Single-family households have the smallest average family size (mean = 4.14, median = 4.00) with a large sample size (1311). Extended families show significantly larger family sizes (mean=5.88, median = 5.00) and a broader spread (max = 16). Households with two or more unrelated members report the highest average (mean = 6.89, median - 6.00), but with a extremely small sample size (9) weakens reliability.
+@tbl-y-household summarizes family size statistics across three household types.
+Single-family households have the smallest average family size (mean = 4.14, median = 4.00) with a large sample size (1311).
+Extended families show significantly larger family sizes (mean=5.88, median = 5.00) and a broader spread (max = 16).
+Households with two or more unrelated members report the highest average (mean = 6.89, median - 6.00), but with a extremely small sample size (9) weakens reliability.
 
-@fig-y-household shows that extended families exhibit the highest median family size (5) with a broader range which is up to 16 members, indicating potential outliers. Single families shows a lower median (4) and tighter clustering of data. It reflects a more consistent household size. Households with two or more unrelated members have a median of 6 members. However it only have a sample size of 9 which weakens the reliability of this category.
+@fig-y-household shows that extended families exhibit the highest median family size (5) with a broader range which is up to 16 members, indicating potential outliers.
+Single families shows a lower median (4) and tighter clustering of data.
+It reflects a more consistent household size.
+Households with two or more unrelated members have a median of 6 members.
+However it only have a sample size of 9 which weakens the reliability of this category.
 
 ```{r, tab.cap="H"}
 #| label: tbl-y-electricity
-#| tbl-cap: Summary statistics on 'Total.Number.of.Family.members' by 'Electricity' 
+#| tbl-cap: Summary statistics on Family.members by Electricity
 #| tbl-cap-location: top
 
 FIES |>
@@ -263,21 +317,26 @@ FIES |>
             'St.Dev' = sd(Total.Number.of.Family.members),
             'Min' = min(Total.Number.of.Family.members),
             'Max' = max(Total.Number.of.Family.members),
-            'IQR' = quantile(Total.Number.of.Family.members,0.75)-quantile(Total.Number.of.Family.members,0.25),
+            'IQR' = quantile(Total.Number.of.Family.members, 0.75) - quantile(Total.Number.of.Family.members, 0.25),
             'Sample_size' = n(),
             .by = Electricity) |>
   gt() |>
-  fmt_number(decimals=2) |>
+  fmt_number(decimals = 2) |>
   cols_label(
     Mean = html("Mean"),
     Median = html("Median"),
-    St.Dev = html("Std. Dev"),
-    Min = html("Minimum"),
-    Max = html("Maximum"),
-    IQR = html("Interquartile Range"),
-    Sample_size = html("Sample Size")
+    St.Dev = html("Std"),
+    Min = html("Min"),
+    Max = html("Max"),
+    IQR = html("IQ"),
+    Sample_size = html("Sample")
+  ) |>
+  tab_options(
+    table.width = pct(90),  # Slightly wider table
+    table.font.size = 12,   # Adjust font size
+    table.border.top.width = px(2),   # Adjust border width for top border
+    table.border.bottom.width = px(2) # Adjust bottom border width
   )
-
 ```
 
 ```{r, fig.pos="H"}
@@ -291,9 +350,17 @@ ggplot(FIES, aes(x = Electricity, y = Total.Number.of.Family.members, fill = Ele
 
 ```
 
-From @tbl-y-electricity, we can see households with electricity (1,630) are about six times more than those without (257). The mean values are nearly identical (4.70 vs. 4.67), but the median is slightly higher for households without electricity (5.00 vs. 4.00). The standard deviation is also slightly larger in the non-electric group (2.47 vs. 2.27), indicating a bit more variability. The maximum value is higher in the electricity group (16.00 vs. 12.00), suggesting a wider range. Both groups have the same interquartile range (3.00), meaning their middle 50% distributions are similar. These differences can be visualized more clearly with boxplots.
+From @tbl-y-electricity, we can see households with electricity (1,630) are about six times more than those without (257).
+The mean values are nearly identical (4.70 vs. 4.67), but the median is slightly higher for households without electricity (5.00 vs. 4.00).
+The standard deviation is also slightly larger in the non-electric group (2.47 vs. 2.27), indicating a bit more variability.
+The maximum value is higher in the electricity group (16.00 vs. 12.00), suggesting a wider range.
+Both groups have the same interquartile range (3.00), meaning their middle 50% distributions are similar.
+These differences can be visualized more clearly with boxplots.
 
-@fig-y-electricity shows that households without electricity tend to have a slightly larger median family size compared to those with electricity. However, the distributions of family sizes in both groups are quite similar. The spread of family sizes in both groups is also comparable, as indicated by the interquartile range. Additionally, both groups exhibit several outliers, representing families with unusually large sizes, as shown by the points beyond the "whiskers" of the boxplots.
+@fig-y-electricity shows that households without electricity tend to have a slightly larger median family size compared to those with electricity.
+However, the distributions of family sizes in both groups are quite similar.
+The spread of family sizes in both groups is also comparable, as indicated by the interquartile range.
+Additionally, both groups exhibit several outliers, representing families with unusually large sizes, as shown by the points beyond the "whiskers" of the boxplots.
 
 2.  **Numerical Variables**
 
@@ -303,34 +370,49 @@ From @tbl-y-electricity, we can see households with electricity (1,630) are abou
 
 p1 <- ggplot(FIES, aes(x = Total.Household.Income)) +
   geom_histogram(fill = "steelblue", color = "black", bins = 30) +
-  labs(title = "Household Income Distribution", x = "Household Income", y = "Count")
+  labs(title = "Household Income", x = "Income", y = "Count") +
+  theme(plot.title = element_text(size = 10))
+
 p2 <- ggplot(FIES, aes(x = Total.Food.Expenditure)) +
   geom_histogram(fill = "steelblue", color = "black", bins = 30) +
-  labs(title = "Household Expenditure Distribution", x = "Household Expenditure", y = "Count")
+  labs(title = "Household Expenditure", x = "Expenditure", y = "Count") +
+  theme(plot.title = element_text(size = 10))
+
 p3 <- ggplot(FIES, aes(x = Household.Head.Age)) +
   geom_histogram(fill = "steelblue", color = "black", bins = 30) +
-  labs(title = "Household Head Age Distribution", x = "Household Head Age", y = "Count")
+  labs(title = "Household Head Age", x = "Age", y = "Count") +
+  theme(plot.title = element_text(size = 10))
+
 p4 <- ggplot(FIES, aes(x = House.Floor.Area)) +
   geom_histogram(fill = "steelblue", color = "black", bins = 30) +
-  labs(title = "House Floor Area Distribution", x = "House Floor Area", y = "Count")
+  labs(title = "House Floor Area", x = "Area", y = "Count") +
+  theme(plot.title = element_text(size = 10))
+
 p5 <- ggplot(FIES, aes(x = House.Age)) +
   geom_histogram(fill = "steelblue", color = "black", bins = 30) +
-  labs(title = "House Age Distribution", x = "House Age", y = "Count")
+  labs(title = "House Age Distribution", x = "Age", y = "Count") +
+  theme(plot.title = element_text(size = 10))
+
 p6 <- ggplot(FIES, aes(x = Number.of.bedrooms)) +
   geom_histogram(fill = "steelblue", color = "black", bins = 30) +
-  labs(title = "Number of bedrooms Distribution", x = "Number of bedrooms", y = "Count")
+  labs(title = "Number of Bedrooms", x = "Bedrooms_Number", y = "Count") +
+  theme(plot.title = element_text(size = 10))
+
 (p1 | p2 | p3) / (p4 | p5 | p6)
 ```
 
 From @fig-his-num, we can see the distributions of 'Total.Household.Income', 'Total.Food.Expenditure', and 'House.Floor.Area' are right-skewed, so applying a log transformation would be beneficial when fitting a Poisson model.
 
-"Household.Head.Age" follows an approximately normal distribution, with most household heads falling within the 30-60 age range. This suggests that middle-aged individuals are the primary decision-makers in households.
+"Household.Head.Age" follows an approximately normal distribution, with most household heads falling within the 30-60 age range.
+This suggests that middle-aged individuals are the primary decision-makers in households.
 
-The distribution of 'House.Floor.Area' is strongly right-skewed, with most houses having relatively small areas, while a few have significantly larger ones. The scarcity of large houses may be due to their higher costs.
+The distribution of 'House.Floor.Area' is strongly right-skewed, with most houses having relatively small areas, while a few have significantly larger ones.
+The scarcity of large houses may be due to their higher costs.
 
 The distribution of 'House.Age' exhibits a slight bimodal pattern, indicating the presence of two types of houses: newly houses and older houses.
 
-The 'Number.of.bedrooms' is a discrete variable, with most houses having 2 or 3 bedrooms, while houses with 4 or more bedrooms are less common. So we can covert the 'Number.of.bedrooms' into categorical variable:
+The 'Number.of.bedrooms' is a discrete variable, with most houses having 2 or 3 bedrooms, while houses with 4 or more bedrooms are less common.
+So we can covert the 'Number.of.bedrooms' into categorical variable:
 
 ```{r}
 #| echo: true
@@ -348,12 +430,14 @@ Then we can use the heat map to check the correlation between numerical variable
 #| label: fig-corr-num
 #| fig-cap: Heat map for numerical variables by 'Total.Number.of.Family.members' 
 
+FIES <- FIES_saved
+colnames(FIES) <- c("Family_Size", "Income", "Food_Exp", "Head_Sex", "Head_Age","Household_Type", "Floor_Area", "House_Age", "Bedrooms", "Electricity")
 # Select all numerical variables
 numeric_vars <- FIES[, sapply(FIES, is.numeric)]
 # Since our dependent variable is a count varaible, use Spearman method
 cor_matrix <- cor(numeric_vars, method = "spearman")
 # Plot the correlation heatmap
-ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4, 
+ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 3, 
            colors = c("blue", "white", "red"), outline.color = "black", 
            legend.title = "Correlation") +
   labs(title = "Correlation Matrix for Numeric Variables") +
@@ -365,19 +449,47 @@ ggcorrplot(cor_matrix, type = "full", lab = TRUE, lab_size = 4,
   )
 ```
 
-Form @fig-corr-num, we can see 'Total.Household.Income' and 'Total.Food.Expenditure' are strongly correlated, reinforcing the expected relationship that higher-income households tend to spend more. 'Total.Number.of.Family.members' influences 'Total.Food.expenditure', but its impact on 'Total.Household.Income' is weaker. 'Household.head.age' has a minor effect on most other variables, with a slight negative correlation with family size. 'House.Floor.Area' shows some correlation with income, but not significantly with 'Household.head.age'.
+Form @fig-corr-num, we can see 'Total.Household.Income' and 'Total.Food.Expenditure' are strongly correlated, reinforcing the expected relationship that higher-income households tend to spend more.
+'Total.Number.of.Family.members' influences 'Total.Food.expenditure', but its impact on 'Total.Household.Income' is weaker.
+'Household.head.age' has a minor effect on most other variables, with a slight negative correlation with family size.
+'House.Floor.Area' shows some correlation with income, but not significantly with 'Household.head.age'.
 
 # Formal Data Analysis
 
-Since the dependent variable 'Total.Number.of.Family.members' is a typical count variable with a mean and variance that are approximately equal, Poisson regression was chosen for modeling. Based on the results of EDA, some variables were log-transformed to improve linear relationships and reduce heteroscedasticity. All selected variables were then included in the model, and stepwise regression using drop1(poisson_model, test = "F") was performed to assess variable significance, gradually eliminating insignificant variables to ensure the final model's robustness and explanatory power.
+Since the dependent variable 'Total.Number.of.Family.members' is a typical count variable with a mean and variance that are approximately equal, Poisson regression was chosen for modeling.
+Based on the results of EDA, some variables were log-transformed to improve linear relationships and reduce heteroscedasticity.
+All selected variables were then included in the model, and stepwise regression using drop1(poisson_model, test = "F") was performed to assess variable significance, gradually eliminating insignificant variables to ensure the final model's robustness and explanatory power.
+
+Fit the first Poisson regression model:
+
+$$
+y_{FS} = \beta_0 + \beta_1 \log[f_{In}(x)] + \beta_2 \log[f_{FE}(x)] + \beta_3 [f_{HS}(x)] + \beta_4 [f_{HeA}(x)] + \beta_5 [f_{HT}(x)] + \beta_6 \log[f_{FA}(x)] + \beta_7 \log[f_{HoA}(x)] + \beta_8 [f_{Bed}(x)] + \beta_9 [f_{El}(x)]
+$$
+
+where
+
+-   $y_{FS}$: The expected value of family size (dependent variable).
+
+-   $\log[f_{In}(x)]$: The logarithm of household income, measuring the economic level of the family.
+
+-   $\log[f_{FE}(x)]$: The logarithm of food expenditure, representing the household's spending on food.
+
+-   $f_{HS}(x)$: The gender of the household head (categorical variable, usually 0 for female and 1 for male).
+
+-   $f_{HeA}(x)$: The age of the household head (continuous variable), indicating the effect of the household head's age on family size.
+
+-   $f_{HT}(x)$: The type of household (categorical variable), indicating different family structures such as single-parent or nuclear families.
+
+-   $\log\left[f_{FA}(x)\right]$: The logarithm of the floor area of the household (continuous variable), measuring the size of the living space.
+
+-   $\log[f_{HoA}(x)]$: The logarithm of house age (with +1 to avoid taking the logarithm of 0), measuring the age of the dwelling.
+
+-   $f_{Bed}(x)$: The number of bedrooms in the household (continuous variable), reflecting the size of the dwelling.
+
+-   $f_{EL}(x)$: Whether the household has access to electricity (0 = no, 1 = yes), reflecting the household's infrastructure.
 
 ```{r}
-FIES <- FIES_saved
-colnames(FIES) <- c("Family_Size", "Income", "Food_Exp", "Head_Sex", "Head_Age","Household_Type", "Floor_Area", "House_Age", "Bedrooms", "Electricity")
-```
-
-```{r}
-# Fit the first Poisson regression model
+#| echo: true
 poisson_model1 <- glm(Family_Size ~ 
                        log(Income) +
                        log(Food_Exp) +
@@ -390,12 +502,21 @@ poisson_model1 <- glm(Family_Size ~
                        Electricity, 
                      family = poisson(link = "log"),
                      data = FIES)
+```
 
+```{r}
+#| eval: false
 summary(poisson_model1)
+```
+
+```{r}
 drop1(poisson_model1, test = "F")
 ```
 
-For Floor_Area, since it is a continuous variable, a log transformation was applied during the EDA process to improve linearity and reduce heteroscedasticity. However, it remained insignificant in the Poisson regression model even after transformation, so it is considered for removal. As for Bedrooms, it is a discrete integer variable with a large number of zero values. Given the potential categorical effect, converting it into a categorical variable may be more appropriate to better capture its impact on family size.
+For Floor_Area, since it is a continuous variable, a log transformation was applied during the EDA process to improve linearity and reduce heteroscedasticity.
+However, it remained insignificant in the Poisson regression model even after transformation, so it is considered for removal.
+As for Bedrooms, it is a discrete integer variable with a large number of zero values.
+Given the potential categorical effect, converting it into a categorical variable may be more appropriate to better capture its impact on family size.
 
 ```{r}
 #| echo: true
@@ -406,12 +527,24 @@ FIES$Bedroom.Category <- cut(FIES$Bedrooms,
 FIES$Bedroom.Category <- factor(FIES$Bedroom.Category)
 ```
 
-```{r}
-# Fit a linear regression model with 'Bedroom.Category'
-model_cat <- lm(Family_Size ~ Bedroom.Category, data = FIES)
-summary(model_cat)
+Fit a linear regression model with 'Bedroom.Category' and observe that the results show the category has a certain significance.
 
-# Fit a poisson regression model with 'Bedroom.Category'
+```{r}
+#| echo: true
+model_cat <- lm(Family_Size ~ Bedroom.Category, data = FIES)
+```
+
+```{r}
+#| echo: true
+model_summary <- summary(model_cat)$coefficients
+library(knitr)
+kable(model_summary, caption = "Model Coefficients and Significance", format = "latex")
+```
+
+Then we can Fit a poisson regression model with 'Bedroom.Category' the same as above:
+
+```{r}
+#| echo: true
 poisson_model_cat <- glm(Family_Size ~ 
                        log(Income) +
                        log(Food_Exp) +
@@ -422,16 +555,28 @@ poisson_model_cat <- glm(Family_Size ~
                        Bedroom.Category +
                        Electricity, 
                      family = poisson(link = "log"),
-                     data = FIES)
+                     data = FIES) 
+```
 
+```{r}
+#| eval: false 
 summary(poisson_model_cat)
+```
+
+```{r}
 drop1(poisson_model_cat, test = "F")
 ```
 
 After converting Bedrooms into a categorical variable and refitting the model, it remained insignificant, so it was ultimately removed.
 
+Fit the second Poisson regression model:
+
+$$
+y_{FS} = \beta_0 + \beta_1 \log[f_{In}(x)] + \beta_2 \log[f_{FE}(x)] + \beta_3 [f_{HS}(x)] + \beta_4 [f_{HeA}(x)] + \beta_5 [f_{HT}(x)] + \beta_6 \log[f_{HoA}(x)] + \beta_8 [f_{El}(x)]
+$$
+
 ```{r}
-# Fit the second Poisson regression model
+#| echo: true
 poisson_model2 <- glm(Family_Size ~ 
                           log(Income) +
                           log(Food_Exp) +
@@ -442,13 +587,18 @@ poisson_model2 <- glm(Family_Size ~
                           Electricity, 
                         family = poisson(link = "log"),
                         data = FIES)
+```
+
+```{r}
+#| eval: false
 summary(poisson_model2)
 ```
 
-Although the classification of Household_Type is not significant statistically, it is retained based on the theoretical justification from the original data classification. This ensures that its impact is still considered during model interpretation.
+Although the classification of Household_Type is not significant statistically, it is retained based on the theoretical justification from the original data classification.
+This ensures that its impact is still considered during model interpretation.
 
 ```{r, fig.pos="H"}
-#| label: fig-residual
+#| label: fig-residual1
 #| fig-cap: The Pearson and deviance residuals against the linear predictor
 
 resp<-resid(poisson_model2,type= "pearson")
@@ -466,7 +616,10 @@ p3 <- ggplot(poisson_model2, aes(x = log(fitted(poisson_model2)), y = residuals(
 grid.arrange(arrangeGrob(p1, p2, ncol = 1), p3, ncol = 2)
 ```
 
-By plotting the QQ plots of Pearson and Deviance, we found that the data conform to the normality assumption. To further assess whether there is significant overdispersion in the Deviance distribution, we compared the performance of the original Poisson model and the Quasi-Poisson model in handling overdispersion. By comparing the standardized Pearson residuals of both models, we found that the original Poisson model performed better, indicating no significant overdispersion. Therefore, no adjustment was made to the standard errors of the parameters, as overdispersion was not evident.
+By plotting the QQ plots of Pearson and Deviance, we found that the data conform to the normality assumption.
+To further assess whether there is significant overdispersion in the Deviance distribution, we compared the performance of the original Poisson model and the Quasi-Poisson model in handling overdispersion.
+By comparing the standardized Pearson residuals of both models, we found that the original Poisson model performed better, indicating no significant overdispersion.
+Therefore, no adjustment was made to the standard errors of the parameters, as overdispersion was not evident.
 
 ```{r, fig.pos="H"}
 #| label: fig-likelihood
@@ -500,10 +653,36 @@ plot(x = pred, y = stand.resid, xlab = "Predicted count", ylab = "Standardised P
 abline(h = c(-3,-2, 0, 2, 3), lty = "dotted", col = "red")
 ```
 
-Based on the model comparison and LRT test results, and considering the high correlation observed in the EDA heatmap, an interaction term between Income and Food_Exp was introduced. After comparing the original model with the model including the interaction term, it was found that the Deviance decreased by 47.118 after adding the interaction term, indicating that the inclusion of the interaction term significantly improved the model's fit. Therefore, the conclusion can be made that introducing the interaction term effectively enhanced the model's explanatory power and fit.
+Based on the model comparison and LRT test results, and considering the high correlation observed in the EDA heatmap, an interaction term between Income and Food_Exp was introduced.
+After comparing the original model with the model including the interaction term, it was found that the Deviance decreased by 47.118 after adding the interaction term, indicating that the inclusion of the interaction term significantly improved the model's fit.
+Therefore, the conclusion can be made that introducing the interaction term effectively enhanced the model's explanatory power and fit the final Poisson regression model:
+
+$$
+y_{FS} = \beta_0 + \beta_1 \log[f_{In}(x)] + \beta_2 \log[f_{FE}(x)] + \beta_3 \log[f_{In}(x)]\log[f_{FE}(x)] + \beta_4 [f_{HS}(x)] + \beta_5 [f_{HeA}(x)] + \beta_6 [f_{HT}(x)] + \beta_7 \log[f_{HoA}(x)] + \beta_8 [f_{El}(x)]
+$$
+
+where
+
+-   $y_{FS}$: The expected value of family size (dependent variable).
+
+-   $\log[f_{In}(x)]$: The logarithm of household income, measuring the economic level of the family.
+
+-   $\log[f_{FE}(x)]$: The logarithm of food expenditure, representing the household's spending on food.
+
+-   $\log[f_{In}(x)]\log[f_{FE}(x)]$: The interaction term between income and food expenditure, measuring their joint effect on family size.
+
+-   $f_{HS}(x)$: The gender of the household head (categorical variable, usually 0 for female and 1 for male).
+
+-   $f_{HeA}(x)$: The age of the household head (continuous variable), indicating the effect of the household head's age on family size.
+
+-   $f_{HT}(x)$: The type of household (categorical variable), indicating different family structures such as single-parent or nuclear families.
+
+-   $\log[f_{HoA}(x)]$: The logarithm of house age (with +1 to avoid taking the logarithm of 0), measuring the age of the dwelling.
+
+-   $f_{EL}(x)$: Whether the household has access to electricity (0 = no, 1 = yes), reflecting the household's infrastructure.
 
 ```{r}
-# Fit the fourth Poisson regression model with an interaction term
+#| echo: true
 poisson_model4 <- glm(Family_Size ~ 
                       log(Income) * log(Food_Exp) +
                       Head_Sex + 
@@ -513,33 +692,70 @@ poisson_model4 <- glm(Family_Size ~
                       Electricity, 
                       family = poisson(link = "log"),
                       data = FIES)
+```
+
+```{r}
 anova(poisson_model2, poisson_model4, test = "LRT")
 ```
 
-Then we can check the Relative Risk(RR):
+```{r, fig.pos="H"}
+#| label: fig-residual2
+#| fig-cap: The Pearson and deviance residuals against the linear predictor
 
-```{r}
-# Check the Relative Risk(RR)
-exp(coef(poisson_model4)) 
-# For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+resp<-resid(poisson_model4,type= "pearson")
+resd<-resid(poisson_model4,type= "deviance")
+p1 <- ggplot(data.frame(sample = resp), aes(sample = sample)) +
+  geom_point(stat = "qq", color = "steelblue") +
+  ylab("Pearson Residuals")
+p2 <- ggplot(data.frame(sample = resd), aes(sample = sample)) +
+  geom_point(stat = "qq", color = "steelblue") +
+  ylab("Deviance Residuals")
+p3 <- ggplot(poisson_model4, aes(x = log(fitted(poisson_model4)), y = residuals(poisson_model4, type = "pearson"))) +
+  geom_jitter(color = "tomato",width = 0.5, height = 0.5) +
+  geom_abline(slope = 0, intercept = 0, col = "steelblue", linewidth = 1) +
+  ylab("Pearson Residuals") + xlab(expression(hat(mu)))
+grid.arrange(arrangeGrob(p1, p2, ncol = 1), p3, ncol = 2)
 ```
 
-Based on the results of Relative Risk(RR), the following key conclusions can be summarized:
-
--   Income's Impact on Family Size: When income increases by 1%, the average family size increases by approximately 3.79 times. This indicates a positive correlation between income and family size, suggesting that higher income may be associated with larger families.
-
--   Food Expenditure's Impact on Family Size: When food expenditure increases by 1%, the average family size increases by approximately 11.25 times. This suggests that higher food spending is closely related to an increase in family size.
-
--   House Age's Impact on Family Size: When house age increases by 1%, the average family size decreases by approximately 5.39%. This implies that older houses may be associated with smaller family sizes, possibly due to living conditions or other factors.
-
--   Interaction Between Income and Food Expenditure: When both income and food expenditure increase by 1%, the average family size decreases by approximately 13.21%. This suggests that while both variables have a positive individual effect, their interaction shows a negative association, possibly indicating that higher income combined with higher food expenditure may not lead to a larger family size.
-
--   Head Sex's Impact on Family Size: Families with male heads tend to have approximately 15% more members than those with female heads. This indicates that families with male heads may be larger than those with female heads.
-
--   Head Age's Impact on Family Size: For each additional year in the head's age, the average family size decreases by approximately 0.4%. This suggests that older heads of households may have smaller families.
-
--   Household Type's Impact on Family Size: If the household type is a single-parent family, the average family size is about 25% smaller compared to other household types. Single-parent families generally have smaller family sizes.
+The QQ plots of the Pearson and Deviance both conform to the normality assumption and there is no obvious overdispersion in the Residuals plot.
 
 # Conclusion
 
-In conclusion, these results show that family size is closely related to various factors, particularly income, food expenditure, head sex, and household type. Changes in family size are influenced not only by individual variables but also by the interactions between them.
+Based on the results of Relative Risk(RR) from the model, the following key conclusions can be summarized:
+
+```{r}
+# Check the Relative Risk(RR)
+model_summary <- tidy(poisson_model4) %>%
+  mutate(RR = exp(estimate))
+#model_summary
+model_summary %>%
+  select(term, estimate, RR) %>% # For Poission Regression, coefficients represent log-relative risk, so convert them to RR
+  kable("latex", caption = "Poisson Model Coefficients and Relative Risks") %>%
+  kable_styling("striped", full_width = F)
+```
+
+From the results, we can see:
+
+-   Income's Impact on Family Size: When income increases by 1%, the average family size increases by approximately 3.79 times.
+    This indicates a positive correlation between income and family size, suggesting that higher income may be associated with larger families.
+
+-   Food Expenditure's Impact on Family Size: When food expenditure increases by 1%, the average family size increases by approximately 11.25 times.
+    This suggests that higher food spending is closely related to an increase in family size.
+
+-   House Age's Impact on Family Size: When house age increases by 1%, the average family size decreases by approximately 5.39%.
+    This implies that older houses may be associated with smaller family sizes, possibly due to living conditions or other factors.
+
+-   Interaction Between Income and Food Expenditure: When both income and food expenditure increase by 1%, the average family size decreases by approximately 13.21%.
+    This suggests that while both variables have a positive individual effect, their interaction shows a negative association, possibly indicating that higher income combined with higher food expenditure may not lead to a larger family size.
+
+-   Head Sex's Impact on Family Size: Families with male heads tend to have approximately 15% more members than those with female heads.
+    This indicates that families with male heads may be larger than those with female heads.
+
+-   Head Age's Impact on Family Size: For each additional year in the head's age, the average family size decreases by approximately 0.4%.
+    This suggests that older heads of households may have smaller families.
+
+-   Household Type's Impact on Family Size: If the household type is a single-parent family, the average family size is about 25% smaller compared to other household types.
+    Single-parent families generally have smaller family sizes.
+
+In conclusion, these results show that family size is closely related to various factors, particularly income, food expenditure, head sex, and household type.
+Changes in family size are influenced not only by individual variables but also by the interactions between them.
